@@ -403,27 +403,21 @@ export default function CandlestickChart({
      when the bucket boundary passes
   ─────────────────────────────────────────── */
   /* ───────────────────────────────────────────
-     Live tick — Direct Web Worker Subscription (Zero React Re-renders)
-     Updates openCandleRef and forces Canvas redraw
+     Unstoppable Universal Live Tick — Guarantees continuous identical updates
+     running simultaneously via Web Worker AND standalone interval
   ─────────────────────────────────────────── */
-
   useEffect(() => {
-    const handleTick = (e) => {
-      const { type, data } = e.data;
-      if (type !== 'STATE_UPDATE' || !data.stocks) return;
-
-      const currentBaseSymbol = asset.symbol.split('/')[0];
-      const stock = data.stocks.find(s => s.symbol === currentBaseSymbol);
-      if (!stock) return;
-
-      const tick = stock.price;
+    const runUniversalTick = (customPrice = null, customTimestamp = null) => {
+      const timestamp = customTimestamp || Date.now();
+      const tick = customPrice || getUniversalPrice(asset.symbol, timestamp);
       livePriceRef.current = tick;
 
-      // Update Buy/Sell button texts directly in DOM to avoid React re-renders!
-      // (Prices removed from buttons, so DOM update is no longer needed)
-
-      // Time Bucket Synchronization using Backend Timestamp
-      const timestamp = data.timestamp || Date.now();
+      // Directly update top header FALL and RISE numbers in DOM without waiting for React re-render
+      const fallEl = document.getElementById('fall-price-display');
+      const riseEl = document.getElementById('rise-price-display');
+      const formatted = fmtP(tick, asset.digits);
+      if (fallEl && fallEl.innerText !== formatted) fallEl.innerText = formatted;
+      if (riseEl && riseEl.innerText !== formatted) riseEl.innerText = formatted;
 
       // Check for massive gap and regenerate history if needed
       const reinitialized = initGlobalHistory(asset.symbol, tick, asset.vol, timestamp);
@@ -431,7 +425,7 @@ export default function CandlestickChart({
           masterRef.current = GLOBAL_HISTORY[asset.symbol];
           const tfs = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
           candlesRef.current = aggregate(masterRef.current, tfs, 1000);
-          openCandleRef.current = null; // Clear old open candle so it doesn't get appended
+          openCandleRef.current = null;
       }
 
       const tfs    = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
@@ -449,7 +443,6 @@ export default function CandlestickChart({
               if (tick > master.highs[bucketMinIdx]) master.highs[bucketMinIdx] = tick;
               if (tick < master.lows[bucketMinIdx] || master.lows[bucketMinIdx] === 0) master.lows[bucketMinIdx] = tick;
           } else if (bucketMinIdx >= HISTORY_MINS) {
-              // Roll array over
               master.closes.copyWithin(0, 1);
               master.opens.copyWithin(0, 1);
               master.highs.copyWithin(0, 1);
@@ -463,16 +456,12 @@ export default function CandlestickChart({
       }
 
       if (oc && bkTs > oc.ts) {
-        // Bucket rolled over → close current candle, open new one
         const closed = { ...oc };
-        
-        // Memory safety: Max 300 candles on screen
         candlesRef.current = [...candlesRef.current.slice(-300), closed];
         openCandleRef.current = {
           ts: bkTs, open: tick, high: tick, low: tick, close: tick, volume: 0,
         };
       } else if (oc) {
-        // Ussi minute ke andar -> Candle ki wicks (High/Low/Close) update karein
         openCandleRef.current = {
           ...oc,
           close: tick,
@@ -486,12 +475,28 @@ export default function CandlestickChart({
         };
       }
 
-      // Direct Canvas Redraw bypassing React
       requestAnimationFrame(() => forceRedrawRef.current());
     };
 
+    const handleTick = (e) => {
+      const { type, data } = e.data;
+      if (type !== 'STATE_UPDATE' || !data.stocks) return;
+      const currentBaseSymbol = asset.symbol.split('/')[0];
+      const stock = data.stocks.find(s => s.symbol === currentBaseSymbol);
+      if (!stock) return;
+      runUniversalTick(stock.price, data.timestamp || Date.now());
+    };
+
     simWorker.addEventListener('message', handleTick);
-    return () => simWorker.removeEventListener('message', handleTick);
+    // Unstoppable autonomous interval guarantees chart never halts even if worker is idle
+    const autoInterval = setInterval(() => {
+      runUniversalTick();
+    }, 300);
+
+    return () => {
+      simWorker.removeEventListener('message', handleTick);
+      clearInterval(autoInterval);
+    };
   }, [asset.symbol, asset.digits, asset.vol, tfKey, showLine]);
 
   /* ───────────────────────────────────────────
@@ -1205,13 +1210,13 @@ export default function CandlestickChart({
             <div style={{ display:'flex', gap:'15px', textAlign:'right' }}>
               <div>
                 <div style={{ fontSize:'9px', fontWeight:'700', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:'1px' }}>Fall</div>
-                <div style={{ fontFamily:'var(--font-mono)', fontSize:'16px', fontWeight:'900', color:'var(--danger)' }}>
+                <div id="fall-price-display" style={{ fontFamily:'var(--font-mono)', fontSize:'16px', fontWeight:'900', color:'var(--danger)' }}>
                   {fmtP(livePrice, asset.digits)}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize:'9px', fontWeight:'700', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:'1px' }}>Rise</div>
-                <div style={{ fontFamily:'var(--font-mono)', fontSize:'16px', fontWeight:'900', color:'var(--success)' }}>
+                <div id="rise-price-display" style={{ fontFamily:'var(--font-mono)', fontSize:'16px', fontWeight:'900', color:'var(--success)' }}>
                   {fmtP(livePrice, asset.digits)}
                 </div>
               </div>
