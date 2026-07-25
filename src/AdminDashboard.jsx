@@ -751,6 +751,8 @@ function UserManagementTab({ state, onAdminAction }) {
                 <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>DEPOSITS</th>
                 <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>WITHDRAWALS</th>
                 <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>P/L</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>PASSWORD</th>
+                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>STATUS / CONTROL</th>
               </tr>
             </thead>
             <tbody>
@@ -775,6 +777,57 @@ function UserManagementTab({ state, onAdminAction }) {
                   <td style={{ padding: '12px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--danger)' }}>${(u.stats?.totalWithdrawal || 0).toFixed(2)}</td>
                   <td style={{ padding: '12px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: (u.stats?.totalLoss || 0) > 0 ? 'var(--danger)' : 'var(--success)' }}>
                     {((u.stats?.totalLoss || 0) * -1).toFixed(2)}
+                  </td>
+                  <td style={{ padding: '12px' }} onClick={e => e.stopPropagation()}>
+                    {editingPasswords[u.id] !== undefined ? (
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={editingPasswords[u.id]} 
+                          onChange={(e) => setEditingPasswords({...editingPasswords, [u.id]: e.target.value})}
+                          style={{ padding: '4px 8px', width: '110px', fontSize: '12px' }}
+                        />
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ padding: '4px 8px', fontSize: '11px' }}
+                          onClick={() => handlePasswordChange(u.id, editingPasswords[u.id])}
+                        >
+                          Save
+                        </button>
+                        <button 
+                          className="btn" 
+                          style={{ padding: '4px 8px', fontSize: '11px', background: 'transparent', border: '1px solid var(--border-color)' }}
+                          onClick={() => {
+                            const next = {...editingPasswords};
+                            delete next[u.id];
+                            setEditingPasswords(next);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontSize: '13px' }}>{u.password || 'N/A'}</span>
+                        <button 
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
+                          onClick={() => setEditingPasswords({...editingPasswords, [u.id]: u.password || ''})}
+                          title="Edit Password"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                    <button 
+                      className={`btn ${u.isBlocked ? 'btn-success' : 'btn-danger'}`} 
+                      style={{ padding: '5px 12px', fontSize: '11px', borderRadius: '4px', fontWeight: 'bold' }}
+                      onClick={() => handleToggleBlock(u.id, u.isBlocked)}
+                    >
+                      {u.isBlocked ? '🔓 Unblock' : '🚫 Block'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -870,99 +923,6 @@ function UserManagementTab({ state, onAdminAction }) {
                 } catch(e) { console.error(e); }
              }
           }}><TrendingDown size={16} /> Force Withdraw</button>
-        </div>
-      </div>
-
-      {/* Account Controls */}
-      <div className="card" style={{ padding: '24px' }}>
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '16px' }}>
-          <Users size={20} color="var(--primary)" /> Account Controls
-        </h3>
-        
-        <div style={{ marginBottom: '16px' }}>
-          <input 
-            type="text" 
-            placeholder="Search clients by name or ID..." 
-            className="form-input" 
-            value={accountSearchQuery}
-            onChange={(e) => setAccountSearchQuery(e.target.value)}
-            style={{ width: '100%', maxWidth: '400px' }}
-          />
-        </div>
-        
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>
-                <th style={{ padding: '12px 8px' }}>Client Info</th>
-                <th style={{ padding: '12px 8px' }}>Password</th>
-                <th style={{ padding: '12px 8px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAccounts.length === 0 ? (
-                <tr><td colSpan="3" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No clients found</td></tr>
-              ) : filteredAccounts.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px 8px' }}>
-                    <div style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '14px' }}>{u.name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>ID: {u.id}</div>
-                  </td>
-                  <td style={{ padding: '12px 8px' }}>
-                    {editingPasswords[u.id] !== undefined ? (
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          value={editingPasswords[u.id]} 
-                          onChange={(e) => setEditingPasswords({...editingPasswords, [u.id]: e.target.value})}
-                          style={{ padding: '4px 8px', width: '150px' }}
-                        />
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ padding: '4px 12px', fontSize: '12px' }}
-                          onClick={() => handlePasswordChange(u.id, editingPasswords[u.id])}
-                        >
-                          Save
-                        </button>
-                        <button 
-                          className="btn" 
-                          style={{ padding: '4px 12px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-color)' }}
-                          onClick={() => {
-                            const next = {...editingPasswords};
-                            delete next[u.id];
-                            setEditingPasswords(next);
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontSize: '14px' }}>{u.password || 'N/A'}</span>
-                        <button 
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                          onClick={() => setEditingPasswords({...editingPasswords, [u.id]: u.password || ''})}
-                          title="Edit Password"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '12px 8px' }}>
-                    <button 
-                      className={`btn ${u.isBlocked ? 'btn-success' : 'btn-danger'}`} 
-                      style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '4px' }}
-                      onClick={() => handleToggleBlock(u.id, u.isBlocked)}
-                    >
-                      {u.isBlocked ? 'Unblock' : 'Block'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
