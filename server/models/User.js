@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema({
   age: { type: Number },
   avatar: { type: String, default: "" },
   simSpeed: { type: Number, default: 300 },
-  theme: { type: String, default: "dark" },
+  theme: { type: String, default: "light" },
   role: { type: String, enum: ['user', 'admin', 'king_admin'], default: 'user' },
   permissions: { type: [String], default: [] },
   withdrawalAddress: { type: String, default: "" },

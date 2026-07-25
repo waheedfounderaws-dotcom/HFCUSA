@@ -193,7 +193,7 @@ app.get('/api/balance/:userId', async (req, res) => {
         const nickname = user ? (user.nickname || "Rashida parv") : "Rashida parv";
         const avatar = user ? (user.avatar || "") : "";
         const simSpeed = user ? (user.simSpeed || 300) : 300;
-        const theme = user ? (user.theme || "dark") : "dark";
+        const theme = user ? (user.theme || "light") : "light";
         const withdrawalAddress = user ? (user.withdrawalAddress || "") : "";
         const walletChangeAccess = user ? (user.walletChangeAccess || false) : false;
         res.json({ success: true, balance, unclaimedRebate, claimedRebate, rebateRate, nickname, avatar, simSpeed, theme, withdrawalAddress, walletChangeAccess });

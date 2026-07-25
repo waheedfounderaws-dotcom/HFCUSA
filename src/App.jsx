@@ -141,7 +141,7 @@ function App() {
   });
 
   // Theme Configuration state
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   // Handle Dark / Light / System Mode changes
   useEffect(() => {
@@ -670,7 +670,7 @@ function App() {
     
     // Save to Database
     const realUserId = simState.userState?.id?.toString() || "525810";
-    const currentTheme = document.body.getAttribute('data-theme') || 'dark'; // We will just send current theme if we don't have it explicitly
+    const currentTheme = document.body.getAttribute('data-theme') || 'light'; // We will just send current theme if we don't have it explicitly
     fetch(`${API_BASE_URL}/api/settings/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
