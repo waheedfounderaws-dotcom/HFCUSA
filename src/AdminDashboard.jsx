@@ -123,6 +123,19 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
     });
   };
 
+  const handleRefreshStats = (e) => {
+    if (e) e.stopPropagation();
+    if (window.syncBackend) window.syncBackend();
+    fetch(`${API_BASE_URL}/api/stats/daily_update`).then(res => res.json()).then(data => {
+      if (data.success && data.stats) {
+        if (window.simWorker) window.simWorker.postMessage({ type: 'HYDRATE_DAILY_STATS', payload: data.stats });
+      }
+    }).catch(err => console.error("Refresh error:", err));
+    if (showHistoryModal) {
+      openHistory();
+    }
+  };
+
   const handleSpeedChange = (e) => {
     const val = parseFloat(e.target.value);
     setSpeedMultiplier(val);
@@ -306,11 +319,21 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Today's Overall Settlement</div>
-                <button onClick={openHistory} style={{ background: 'var(--bg-accent)', color: 'var(--text-bright)', border: '1px solid var(--border-color)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Activity size={14}/> View History
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-bright)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Today's Overall Settlement
+                  <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
+                    📅 Resets daily at 12:00 AM (Check History for previous days)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={handleRefreshStats} style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(6,182,212,0.2)' }}>
+                    <RefreshCw size={14}/> Refresh Live Stats
+                  </button>
+                  <button onClick={openHistory} style={{ background: 'var(--bg-accent)', color: 'var(--text-bright)', border: '1px solid var(--border-color)', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Activity size={14}/> View History
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
@@ -355,7 +378,12 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
           <div style={{ background: 'var(--bg-dark)', borderRadius: '12px', width: '100%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--bg-dark)', zIndex: 1 }}>
               <h3 style={{ margin: 0, color: 'var(--text-bright)' }}>Overall Settlement History</h3>
-              <button onClick={() => setShowHistoryModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20}/></button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button onClick={handleRefreshStats} style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <RefreshCw size={14}/> Refresh History
+                </button>
+                <button onClick={() => setShowHistoryModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20}/></button>
+              </div>
             </div>
             <div style={{ padding: '20px' }}>
               {loadingHistory ? (
