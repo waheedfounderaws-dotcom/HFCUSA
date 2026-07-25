@@ -322,8 +322,9 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-bright)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   Today's Overall Settlement
-                  <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>
-                    📅 Resets daily at 12:00 AM (Check History for previous days)
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#06b6d4', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', padding: '3px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    📅 Date: {new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>| Session: 12:00 AM - 11:59 PM (Resets Daily)</span>
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
