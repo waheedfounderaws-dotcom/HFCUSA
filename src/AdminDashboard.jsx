@@ -112,6 +112,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
   });
   const [customDateStats, setCustomDateStats] = useState(null);
   const [liveDbStats, setLiveDbStats] = useState(null);
+  const [serverActiveTrades, setServerActiveTrades] = useState([]);
 
   const [selYear, selMonth, selDay] = (selectedSettlementDate || '').split('-').map(Number);
   const selectedDateStr = (selYear && selMonth && selDay) ? new Date(selYear, selMonth - 1, selDay).toDateString() : new Date().toDateString();
@@ -127,9 +128,17 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
             if (window.simWorker) window.simWorker.postMessage({ type: 'HYDRATE_DAILY_STATS', payload: data.stats });
           }
         }).catch(err => console.error("Error fetching live db stats:", err));
+
+      fetch(`${API_BASE_URL}/api/trades/active/all`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.activeTrades) {
+            setServerActiveTrades(data.activeTrades);
+          }
+        }).catch(() => {});
     };
     fetchLiveDbStats();
-    const interval = setInterval(fetchLiveDbStats, 5000);
+    const interval = setInterval(fetchLiveDbStats, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -236,7 +245,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         
         {(() => {
           const allActiveTrades = [
-            ...(state.activeTrades || []),
+            ...(serverActiveTrades || []),
             ...(globalActiveBets || []).map(bet => ({
               id: bet.id || Math.random().toString(),
               traderName: state.userState?.name || 'Admin',
@@ -246,6 +255,18 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               entryPrice: bet.entryPrice,
               marginUsed: bet.amount,
               pnl: 0, // Pending binary bets don't show real-time PNL
+              isBet: true
+            })),
+            ...(state.activeTrades || []),
+            ...(state.recentTrades || []).slice(0, 8).map((t, index) => ({
+              id: t.id || `sim_${index}_${Math.random().toString()}`,
+              traderName: t.user || t.traderName || 'VIP_Client_' + (101 + index),
+              traderId: t.userId || 'Client_' + Math.floor(Math.abs(Math.sin((t.id || index + 1) * 10)) * 9000 + 1000),
+              symbol: t.symbol || (index % 2 === 0 ? 'XAU/USD' : 'BTC/USD'),
+              type: (t.type === 'Rise' || t.type === 'Fall' || t.type === 'BUY' || t.type === 'SELL') ? t.type : (index % 2 === 0 ? 'Rise' : 'Fall'),
+              entryPrice: t.price || t.entryPrice || (t.symbol && t.symbol.startsWith('BTC') ? 105200.00 : 3326.65),
+              marginUsed: t.amount || t.margin || t.volume || (100 + index * 50),
+              pnl: 0,
               isBet: true
             }))
           ];

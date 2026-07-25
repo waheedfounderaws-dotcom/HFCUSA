@@ -337,6 +337,56 @@ app.post('/api/admin/force_adjust', async (req, res) => {
     }
 });
 
+// Real-Time Active Client Trades Server Registry for Admin Monitoring
+const activeClientTradesStore = new Map();
+
+app.post('/api/trades/active/sync', (req, res) => {
+    try {
+        const { userId, userName, activeTrades = [] } = req.body;
+        if (!userId) return res.status(400).json({ success: false, message: "Missing userId" });
+        
+        if (activeTrades && activeTrades.length > 0) {
+            activeClientTradesStore.set(userId.toString(), {
+                userId: userId.toString(),
+                userName: userName || userId,
+                trades: activeTrades,
+                updated: Date.now()
+            });
+        } else {
+            activeClientTradesStore.delete(userId.toString());
+        }
+        res.json({ success: true });
+    } catch (e) {
+        console.error("Error syncing active trades:", e);
+        res.status(500).json({ success: false });
+    }
+});
+
+app.get('/api/trades/active/all', (req, res) => {
+    try {
+        const now = Date.now();
+        const allTrades = [];
+        for (const [uid, data] of activeClientTradesStore.entries()) {
+            // Filter out stale client trade feeds older than 30 minutes
+            if (now - data.updated < 30 * 60 * 1000) {
+                (data.trades || []).forEach(t => {
+                    allTrades.push({
+                        ...t,
+                        traderId: uid,
+                        traderName: data.userName || t.traderName || uid,
+                    });
+                });
+            } else {
+                activeClientTradesStore.delete(uid);
+            }
+        }
+        res.json({ success: true, activeTrades: allTrades });
+    } catch (e) {
+        console.error("Error fetching all active trades:", e);
+        res.status(500).json({ success: false });
+    }
+});
+
 app.post('/api/trades/close', async (req, res) => {
     try {
         const { userId, trade } = req.body;
