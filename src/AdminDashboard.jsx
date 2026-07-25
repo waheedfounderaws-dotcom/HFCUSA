@@ -248,7 +248,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
             ...(serverActiveTrades || []),
             ...(globalActiveBets || []).map(bet => ({
               id: bet.id || Math.random().toString(),
-              traderName: state.userState?.name || 'Admin',
+              traderName: state.userState?.name || state.userState?.nickname || 'Admin',
               traderId: state.userState?.id || 'admin',
               symbol: bet.symbol || 'XAU/USD',
               type: bet.type, // 'Rise' or 'Fall'
@@ -256,25 +256,13 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               marginUsed: bet.amount,
               pnl: 0, // Pending binary bets don't show real-time PNL
               isBet: true
-            })),
-            ...(state.activeTrades || []),
-            ...(state.recentTrades || []).slice(0, 8).map((t, index) => ({
-              id: t.id || `sim_${index}_${Math.random().toString()}`,
-              traderName: t.user || t.traderName || 'VIP_Client_' + (101 + index),
-              traderId: t.userId || 'Client_' + Math.floor(Math.abs(Math.sin((t.id || index + 1) * 10)) * 9000 + 1000),
-              symbol: t.symbol || (index % 2 === 0 ? 'XAU/USD' : 'BTC/USD'),
-              type: (t.type === 'Rise' || t.type === 'Fall' || t.type === 'BUY' || t.type === 'SELL') ? t.type : (index % 2 === 0 ? 'Rise' : 'Fall'),
-              entryPrice: t.price || t.entryPrice || (t.symbol && t.symbol.startsWith('BTC') ? 105200.00 : 3326.65),
-              marginUsed: t.amount || t.margin || t.volume || (100 + index * 50),
-              pnl: 0,
-              isBet: true
             }))
           ];
 
           if (allActiveTrades.length === 0) {
             return (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-                No active trades at the moment.
+                No active client trades at the moment.
               </div>
             );
           }
