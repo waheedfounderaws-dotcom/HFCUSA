@@ -1,19 +1,41 @@
 // High-Performance Simulation Engine running in Web Worker
 // Handles 3000+ traders, stock prices, transaction logging, and referral network calculations
 
+// Universal Deterministic Price Calculation
+// Guaranteed identical across all global clients and web workers for any specific timestamp
+function getUniversalPrice(symbol, timestampMs = Date.now()) {
+  const isGold = symbol ? (symbol.startsWith('XAU') || symbol === 'XAU') : true;
+  const basePrice = isGold ? 3325.00 : 105200.00;
+  const vol = isGold ? 15.0 : 950.0;
+  
+  const t = timestampMs / 1000.0;
+  const wave1 = Math.sin(t / 3600.0 * 2 * Math.PI * 2) * (vol * 0.40);
+  const wave2 = Math.sin(t / 900.0 * 2 * Math.PI * 3 + 1.5) * (vol * 0.25);
+  const wave3 = Math.cos(t / 180.0 * 2 * Math.PI * 5 + 0.8) * (vol * 0.20);
+  const wave4 = Math.sin(t / 30.0 * 2 * Math.PI * 7 + 2.3) * (vol * 0.10);
+  
+  const tickSlot = Math.floor(t * 2);
+  const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : 313.313)) * 43758.5453;
+  const noise = (seedNoise - Math.floor(seedNoise) - 0.5) * (vol * 0.10);
+  
+  const price = basePrice + wave1 + wave2 + wave3 + wave4 + noise;
+  return Number(price.toFixed(2));
+}
+
 // Initial Stock Configurations — Only 2 Pairs
+const nowTsInit = Date.now();
 let stocks = [
-  { symbol: 'XAU', name: 'Gold / USD', price: 3325.00, history: [], volatility: 0.0001, drift: 0 },
-  { symbol: 'BTC', name: 'Bitcoin / USD', price: 105200.00, history: [], volatility: 0.0003, drift: 0 },
+  { symbol: 'XAU', name: 'Gold / USD', price: getUniversalPrice('XAU', nowTsInit), history: [], volatility: 0.0001, drift: 0 },
+  { symbol: 'BTC', name: 'Bitcoin / USD', price: getUniversalPrice('BTC', nowTsInit), history: [], volatility: 0.0003, drift: 0 },
 ];
 
-// Initialize histories
+// Initialize histories deterministically
 stocks.forEach(stock => {
-  for (let i = 0; i < 60; i++) {
-    let change = (Math.random() - 0.49) * stock.volatility * stock.price;
-    stock.price = Math.max(1, stock.price + change);
-    stock.history.push(Number(stock.price.toFixed(2)));
+  for (let i = 59; i >= 0; i--) {
+    const p = getUniversalPrice(stock.symbol, nowTsInit - (i * 1000));
+    stock.history.push(Number(p.toFixed(2)));
   }
+  stock.price = stock.history[stock.history.length - 1] || getUniversalPrice(stock.symbol, nowTsInit);
 });
 
 // Realistic culturally-matched name profiles for authentic leaderboards
@@ -292,117 +314,9 @@ function updateStockPrices() {
       timeMultiplier = 0.3; // Low volatility
   }
 
+  const currentTimestamp = Date.now();
   stocks.forEach(stock => {
-    let currentDrift = stock.drift * shockDriftMultiplier;
-    let currentVol = stock.volatility * shockVolMultiplier * timeMultiplier;
-
-    // Specific crypto boost
-    if (marketEvent && marketEvent.type === 'CRYPTO_HYP' && (stock.symbol === 'BTC' || stock.symbol === 'ETH')) {
-      currentDrift = stock.drift * 12.0;
-      currentVol = stock.volatility * 2.0;
-    }
-
-    // --- HOUSE ALWAYS WINS: Market Manipulation Logic ---
-    let longVol = 0;
-    let shortVol = 0;
-    const now = Date.now();
-    
-    activeBinaryBets.filter(b => b.symbol.startsWith(stock.symbol)).forEach(bet => {
-        const dMs = (bet.tfs || 60) * 1000;
-        const bucketCloseTs = Math.floor(now / dMs) * dMs + dMs; // The upcoming close
-        // Is this bucket closing in the next 15 seconds?
-        const timeLeft = bucketCloseTs - now;
-        if (timeLeft <= 15000 && timeLeft > 0) {
-            if (bet.type === 'Rise' || bet.type === 'BUY') longVol += bet.amount;
-            else if (bet.type === 'Fall' || bet.type === 'SELL') shortVol += bet.amount;
-        }
-    });
-
-    if (longVol > shortVol) { 
-        // More money on Long -> Rig it DOWN (BEARISH)
-        stock.forcedTrend = 'BEARISH';
-        stock.trendDurationTicks = 1; // apply tick by tick while condition holds
-        currentDrift = -(stock.volatility * 4.0); // Extreme downward pull
-        currentVol = stock.volatility * 2.0;
-    } else if (shortVol > longVol) {
-        // More money on Short -> Rig it UP (BULLISH)
-        stock.forcedTrend = 'BULLISH';
-        stock.trendDurationTicks = 1;
-        currentDrift = stock.volatility * 4.0; // Extreme upward pull
-        currentVol = stock.volatility * 2.0;
-    }
-
-    // Chart Control overrides
-    if (stock.forcedTrend) {
-      if (stock.trendDurationTicks !== undefined) {
-        if (stock.trendDurationTicks > 0) {
-            stock.trendDurationTicks--;
-        } else {
-            stock.forcedTrend = null;
-            stock.trendDurationTicks = undefined;
-        }
-      }
-
-      if (stock.forcedTrend === 'BULLISH') {
-        currentDrift = stock.volatility * 2.0; 
-        currentVol = stock.volatility * 1.5;
-      } else if (stock.forcedTrend === 'BEARISH') {
-        currentDrift = -(stock.volatility * 2.0); 
-        currentVol = stock.volatility * 1.5;
-      } else if (stock.forcedTrend === 'CONSOLIDATION') {
-        currentDrift = 0; 
-        currentVol = stock.volatility * 0.2;
-      } else if (stock.forcedTrend === 'NORMAL') {
-        stock.forcedTrend = null;
-      }
-    }
-
-    // The micro-trend smoothly oscillates over the duration of a candle.
-    // Reduced amplitude drastically to match historical 1-minute candle sizes (~$1-2 range)
-    const t = Date.now() / 1000;
-    const microTrend = (Math.sin(t * 0.5) * 0.2 + Math.cos(t * 0.7) * 0.2) * (currentVol * 0.05);
-
-    // Normal Brownian noise - scaled down for 300ms ticks
-    const dW = (Math.random() + Math.random() + Math.random() - 1.5) / 1.732; 
-    let changePercent = (currentDrift * 0.05) + microTrend + (currentVol * 0.05 * dW);
-    
-    // TARGET PRICE STEERING (Corrected Gradual Pull)
-    if (stock.targetPrice) {
-       const diff = stock.targetPrice - stock.price;
-       
-       // Calculate remaining ticks. Default to 15 ticks if no duration is set.
-       let remainingTicks = stock.targetDurationTicks !== undefined ? stock.targetDurationTicks : 15;
-       
-       // Base step needed per tick to reach the target exactly on time
-       const baseSteer = (diff / stock.price) / Math.max(remainingTicks, 1); 
-       
-       // To prevent "flat" straight lines without wicks, we add high volatility during steering.
-       // The noise amplitude is 4x the base steer, guaranteeing it ticks backwards frequently
-       // to form natural wicks, while the average still perfectly hits the target.
-       const steerVolatility = Math.max(currentVol, Math.abs(baseSteer) * 4.0);
-       const steerNoise = steerVolatility * ((Math.random() + Math.random() + Math.random() - 1.5) / 1.732);
-       
-       // Apply base steer + the massive noise
-       changePercent += baseSteer + steerNoise;
-       
-       if (stock.targetDurationTicks !== undefined) {
-           stock.targetDurationTicks--;
-       }
-
-       // Snap to target when time is up or extremely close
-       const isTimeUp = (stock.targetDurationTicks !== undefined && stock.targetDurationTicks <= 0);
-       const isVeryClose = (Math.abs(diff) / stock.targetPrice < 0.00005); 
-       
-       if (isTimeUp || (stock.targetDurationTicks === undefined && isVeryClose)) { 
-           stock.price = stock.targetPrice;
-           changePercent = 0; 
-           stock.targetPrice = null;
-           stock.forcedTrend = null; 
-           stock.targetDurationTicks = undefined;
-       }
-    }
-
-    stock.price = Math.max(0.1, stock.price * (1 + changePercent));
+    stock.price = getUniversalPrice(stock.symbol, currentTimestamp);
     stock.history.push(Number(stock.price.toFixed(2)));
     if (stock.history.length > 40) {
       stock.history.shift();

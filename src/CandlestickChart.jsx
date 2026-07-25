@@ -40,18 +40,31 @@ const GLOBAL_HISTORY = {
   'BTC/USD': { opens: null, highs: null, lows: null, closes: null, startTs: 0 }
 };
 
+// Universal Deterministic Price Calculation
+// Guaranteed identical across all global clients and web workers for any specific timestamp
+function getUniversalPrice(symbol, timestampMs = Date.now()) {
+  const isGold = symbol ? (symbol.startsWith('XAU') || symbol === 'XAU') : true;
+  const basePrice = isGold ? 3325.00 : 105200.00;
+  const vol = isGold ? 15.0 : 950.0;
+  
+  const t = timestampMs / 1000.0;
+  const wave1 = Math.sin(t / 3600.0 * 2 * Math.PI * 2) * (vol * 0.40);
+  const wave2 = Math.sin(t / 900.0 * 2 * Math.PI * 3 + 1.5) * (vol * 0.25);
+  const wave3 = Math.cos(t / 180.0 * 2 * Math.PI * 5 + 0.8) * (vol * 0.20);
+  const wave4 = Math.sin(t / 30.0 * 2 * Math.PI * 7 + 2.3) * (vol * 0.10);
+  
+  const tickSlot = Math.floor(t * 2);
+  const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : 313.313)) * 43758.5453;
+  const noise = (seedNoise - Math.floor(seedNoise) - 0.5) * (vol * 0.10);
+  
+  const price = basePrice + wave1 + wave2 + wave3 + wave4 + noise;
+  return Number(price.toFixed(2));
+}
+
 function initGlobalHistory(symbol, currentPrice, vol, currentTimestamp = Date.now()) {
-  let forceReinit = false;
   if (GLOBAL_HISTORY[symbol] && GLOBAL_HISTORY[symbol].closes) {
-    const closes = GLOBAL_HISTORY[symbol].closes;
-    const lastP = closes[HISTORY_MINS - 1];
     const lastTs = GLOBAL_HISTORY[symbol].startTs + (HISTORY_MINS - 1) * MIN_INTERVAL_MS;
-    
-    // If there is a massive gap between history and live price (e.g. >1%), 
-    // or a massive time gap (e.g. > 5 minutes in either direction), re-initialize to prevent chart corruption
-    if (Math.abs(lastP - currentPrice) / currentPrice > 0.01 || Math.abs(currentTimestamp - lastTs) > 5 * MIN_INTERVAL_MS) {
-       forceReinit = true;
-    } else {
+    if (Math.abs(currentTimestamp - lastTs) <= 5 * MIN_INTERVAL_MS) {
        return false;
     }
   }
@@ -61,25 +74,31 @@ function initGlobalHistory(symbol, currentPrice, vol, currentTimestamp = Date.no
   const lows = new Float64Array(HISTORY_MINS);
   const closes = new Float64Array(HISTORY_MINS);
   
-  // Work backwards from CURRENT price so chart end perfectly meets current price
-  closes[HISTORY_MINS - 1] = currentPrice;
-  opens[HISTORY_MINS - 1] = currentPrice;
-  highs[HISTORY_MINS - 1] = currentPrice;
-  lows[HISTORY_MINS - 1] = currentPrice;
-
-  for (let i = HISTORY_MINS - 2; i >= 0; i--) {
-    const prevC = closes[i+1];
-    const c = prevC / (1 + (Math.random() - 0.49) * vol);
-    closes[i] = c;
-    opens[i] = c * (1 + (Math.random() - 0.5) * vol * 0.5);
-    highs[i] = Math.max(c, opens[i]) * (1 + Math.random() * vol * 0.5);
-    lows[i] = Math.min(c, opens[i]) * (1 - Math.random() * vol * 0.5);
-  }
-  
-  // Align startTs perfectly to the minute
   const alignedNow = Math.floor(currentTimestamp / MIN_INTERVAL_MS) * MIN_INTERVAL_MS;
   const startTs = alignedNow - (HISTORY_MINS - 1) * MIN_INTERVAL_MS;
   
+  const isGold = symbol.startsWith('XAU') || symbol === 'XAU';
+  
+  for (let i = 0; i < HISTORY_MINS; i++) {
+    const minTs = startTs + i * MIN_INTERVAL_MS;
+    const o = getUniversalPrice(symbol, minTs);
+    const c = getUniversalPrice(symbol, minTs + 59500);
+    
+    const range = Math.abs(o - c);
+    const seed = Math.abs(Math.sin(minTs * 0.001) * 10000);
+    const wickTop = (seed % 1) * (isGold ? 0.6 : 30.0) + range * 0.2;
+    const wickBot = ((seed * 3.14159) % 1) * (isGold ? 0.6 : 30.0) + range * 0.2;
+    
+    opens[i] = o;
+    closes[i] = c;
+    highs[i] = Number((Math.max(o, c) + wickTop).toFixed(2));
+    lows[i] = Number((Math.min(o, c) - wickBot).toFixed(2));
+  }
+  
+  closes[HISTORY_MINS - 1] = currentPrice;
+  if (currentPrice > highs[HISTORY_MINS - 1]) highs[HISTORY_MINS - 1] = currentPrice;
+  if (currentPrice < lows[HISTORY_MINS - 1]) lows[HISTORY_MINS - 1] = currentPrice;
+
   GLOBAL_HISTORY[symbol].opens = opens;
   GLOBAL_HISTORY[symbol].highs = highs;
   GLOBAL_HISTORY[symbol].lows = lows;
@@ -116,7 +135,7 @@ function aggregate(master, tfSeconds, maxCandles = 1000) {
       if (lows[j] < low)  low  = lows[j];
     }
     const close  = closes[end - 1];
-    const volume = (end - i) * (5 + Math.random() * 15);
+    const volume = Math.floor((end - i) * (8 + Math.abs((Math.sin(i * 13.7) * 20) % 15)));
     
     // Perfectly aligned timestamp for the candle
     const exactTs = startTs + i * MIN_INTERVAL_MS;
@@ -454,19 +473,12 @@ export default function CandlestickChart({
         };
       } else if (oc) {
         // Ussi minute ke andar -> Candle ki wicks (High/Low/Close) update karein
-        
-        // MARUBOZU FIX: Forceful natural wicks for aggressive trends
-        // Gold ke hisaab se price ka 0.003% random jitter banayen
-        const wickJitter = tick * 0.00003 * Math.random(); 
-
         openCandleRef.current = {
           ...oc,
           close: tick,
-          // Tick ke sath thoda sa random plus karein taake hamesha thodi wick bane
-          high: Math.max(oc.high, tick + (Math.random() > 0.3 ? wickJitter : 0)), 
-          // Tick ke sath thoda sa random minus karein taake neechay ki wick bane
-          low: Math.min(oc.low, tick - (Math.random() > 0.3 ? wickJitter : 0)),
-          volume: oc.volume + (Math.random() * 2),
+          high: Math.max(oc.high, tick),
+          low: Math.min(oc.low, tick),
+          volume: oc.volume + 1,
         };
       } else {
         openCandleRef.current = {
