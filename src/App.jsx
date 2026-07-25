@@ -333,30 +333,38 @@ function App() {
             const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
             const userId = savedUser.id || "525810";
             
-            // Sync Database Transactions
+            // INSTANT PRIORITY: Sync Database Balance FIRST before slow history tables!
+            const res = await fetch(`${API_BASE_URL}/api/balance/${userId}`);
+            const data = await res.json();
+            
+            if (data.success && typeof data.balance === 'number') {
+                // Save immediately to localStorage so initial browser render never lags
+                if (savedUser && savedUser.id) {
+                    savedUser.balance = data.balance;
+                    localStorage.setItem('aq_userData', JSON.stringify(savedUser));
+                }
+            }
+
+            // Sync Database Transactions in background
             const txRes = await fetch(`${API_BASE_URL}/api/transactions/${userId}`);
             const txData = await txRes.json();
             if (txData.success) {
                 setDbTransactions(txData.transactions);
             }
             
-            // Sync Database Trades
+            // Sync Database Trades in background
             const trRes = await fetch(`${API_BASE_URL}/api/trades/${userId}`);
             const trData = await trRes.json();
             if (trData.success && trData.trades) {
                 simWorker.postMessage({ type: 'SYNC_DB_TRADES', payload: { trades: trData.trades } });
             }
             
-            // Sync Rebate History from DB
+            // Sync Rebate History from DB in background
             const rhRes = await fetch(`${API_BASE_URL}/api/rebate/history/${userId}`);
             const rhData = await rhRes.json();
             if (rhData.success) {
                 simWorker.postMessage({ type: 'SYNC_DB_REBATE_HISTORY', payload: { history: rhData.history } });
             }
-
-            // Sync Database Balance
-            const res = await fetch(`${API_BASE_URL}/api/balance/${userId}`);
-            const data = await res.json();
             
             if (data.success) {
                 // Always sync rebate to keep it updated from DB
@@ -450,8 +458,8 @@ function App() {
 
     window.syncBackend = syncBackend;
 
-    // Run once immediately on load
-    setTimeout(syncBackend, 500);
+    // Run immediately without any delay on load
+    setTimeout(syncBackend, 0);
 
     // Cryptomus Backend Polling (Sync every 5 seconds)
     const balanceInterval = setInterval(syncBackend, 5000);
