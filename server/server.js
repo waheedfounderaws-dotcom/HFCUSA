@@ -14,14 +14,25 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // MongoDB Connection
-console.log("MONGODB_URI is: ", process.env.MONGODB_URI ? "Defined" : "Undefined");
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB successfully!"))
-  .catch(err => console.error("MongoDB connection error:", err));
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://waheedfounderaws_db_user:4SLZbc4ywww5FVjF@ac-fxmgzac-shard-00-00.4fnlkhk.mongodb.net:27017,ac-fxmgzac-shard-00-01.4fnlkhk.mongodb.net:27017,ac-fxmgzac-shard-00-02.4fnlkhk.mongodb.net:27017/alphaquest?ssl=true&replicaSet=atlas-4zo895-shard-0&authSource=admin&appName=Cluster0";
+
+if (!mongoose.connection.readyState) {
+    mongoose.connect(MONGODB_URI)
+      .then(() => console.log("Connected to MongoDB successfully!"))
+      .catch(err => console.error("MongoDB connection error:", err));
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Ensure Vercel serverless routing compatibility
+app.use((req, res, next) => {
+    if (!req.url.startsWith('/api') && req.url !== '/') {
+        req.url = '/api' + req.url;
+    }
+    next();
+});
 
 // Routes
 app.post('/api/cryptomus/deposit', createDepositInvoice);
