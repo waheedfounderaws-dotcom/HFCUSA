@@ -762,6 +762,16 @@ function tick() {
 
 // Package and send standard state updates to the main thread
 function sendStateUpdate() {
+  const nowDayStr = new Date().toDateString();
+  if (nowDayStr !== currentDayStr) {
+    currentDayStr = nowDayStr;
+    todayTradesCount = 0;
+    todayBuyCount = 0;
+    todaySellCount = 0;
+    todayClientLoss = 0;
+    todayClientProfit = 0;
+  }
+
   // Global stats
   const totalMarketCap = stocks.reduce((sum, s) => sum + (s.price * 2500000), 0); // Mock circulating supply
   
@@ -1337,7 +1347,7 @@ onmessage = function(e) {
       break;
 
     case 'HYDRATE_DAILY_STATS':
-      if (payload) {
+      if (payload && payload.dateStr === currentDayStr) {
         todayTradesCount = payload.todayTradesCount || 0;
         todayBuyCount = payload.todayBuyCount || 0;
         todaySellCount = payload.todaySellCount || 0;

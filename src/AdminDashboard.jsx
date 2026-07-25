@@ -387,7 +387,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               </div>
 
               {(() => {
-                const displayStats = (!isSelectedToday && customDateStats) ? customDateStats : (state.globalStats || {});
+                const displayStats = isSelectedToday ? (state.globalStats || {}) : (customDateStats || { todayTradesCount: 0, todayBuyCount: 0, todaySellCount: 0, todayClientProfit: 0, todayClientLoss: 0 });
                 const net = (displayStats.todayClientLoss || 0) - (displayStats.todayClientProfit || 0);
                 return (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
