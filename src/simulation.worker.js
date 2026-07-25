@@ -16,9 +16,50 @@ stocks.forEach(stock => {
   }
 });
 
-// Helper variables for name generation
-const firstNames = ['Ahmad', 'John', 'Sarah', 'David', 'Michael', 'Emily', 'Ali', 'Zainab', 'Robert', 'Jessica', 'Bilal', 'Fatima', 'Usman', 'Mary', 'James', 'William', 'Patricia', 'Jennifer', 'Elizabeth', 'Linda', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Thomas', 'Charles', 'Christopher', 'Daniel', 'Matthew', 'Hamza', 'Ayesha', 'Sana', 'Imran', 'Maria', 'Sofia', 'Li', 'Wei', 'Min', 'Jian', 'Elena', 'Dmitry', 'Ivan', 'Lucas', 'Chloe', 'Gabriel', 'Mateo', 'Sofia'];
-const lastNames = ['Khan', 'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Ali', 'Ahmed', 'Hassan', 'Raza', 'Iqbal', 'Malik', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramzan', 'Butt', 'Dar', 'Gill', 'Chen', 'Wang', 'Zhang', 'Liu', 'Zhao', 'Petrov', 'Ivanov', 'Smirnov', 'Silva', 'Santos', 'Garcia'];
+// Realistic culturally-matched name profiles for authentic leaderboards
+const NAME_PROFILES = [
+  {
+    weight: 45, // 45% Pakistani / South Asian Traders
+    firsts: ['Ahmad', 'Ali', 'Bilal', 'Usman', 'Hamza', 'Imran', 'Talha', 'Faizan', 'Shahzad', 'Arsalan', 'Zeeshan', 'Saad', 'Faisal', 'Naveed', 'Kashif', 'Zain', 'Danish', 'Sheraz', 'Zainab', 'Fatima', 'Ayesha', 'Sana', 'Sadia', 'Hira', 'Mariam', 'Anum'],
+    lasts: ['Khan', 'Malik', 'Iqbal', 'Ahmed', 'Raza', 'Butt', 'Dar', 'Ramzan', 'Sheikh', 'Qureshi', 'Chaudhry', 'Alvi', 'Gill', 'Mughal', 'Bhatti', 'Shah', 'Farooq', 'Siddiqui', 'Memon']
+  },
+  {
+    weight: 35, // 35% English / Western Traders
+    firsts: ['John', 'Robert', 'David', 'Michael', 'James', 'William', 'Thomas', 'Charles', 'Daniel', 'Matthew', 'Christopher', 'Richard', 'Joseph', 'Sarah', 'Emily', 'Jessica', 'Mary', 'Jennifer', 'Elizabeth', 'Linda', 'Susan', 'Barbara', 'Chloe'],
+    lasts: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White', 'Harris', 'Clark', 'Walker']
+  },
+  {
+    weight: 10, // 10% Arabic / Middle Eastern Traders
+    firsts: ['Omar', 'Tariq', 'Hassan', 'Khalid', 'Faisal', 'Zaid', 'Yousef', 'Rashed', 'Noor', 'Layla', 'Reem', 'Yasmin'],
+    lasts: ['Al-Farsi', 'Al-Mansoor', 'Al-Sayed', 'Al-Hashimi', 'Al-Maktoum', 'Al-Sabah', 'Othman', 'Husseini']
+  },
+  {
+    weight: 6, // 6% Chinese / East Asian Traders
+    firsts: ['Li', 'Wei', 'Min', 'Jian', 'Jun', 'Chen', 'Xiaoli', 'Mei'],
+    lasts: ['Wang', 'Zhang', 'Chen', 'Liu', 'Zhao', 'Wu', 'Huang', 'Yang']
+  },
+  {
+    weight: 4, // 4% European / Hispanic Traders
+    firsts: ['Mateo', 'Lucas', 'Gabriel', 'Elena', 'Sofia', 'Dmitry', 'Ivan'],
+    lasts: ['Rodriguez', 'Martinez', 'Perez', 'Sanchez', 'Garcia', 'Petrov', 'Ivanov', 'Smirnov']
+  }
+];
+
+function generateRealisticName() {
+  const totalWeight = NAME_PROFILES.reduce((sum, p) => sum + p.weight, 0);
+  let r = Math.random() * totalWeight;
+  let selected = NAME_PROFILES[0];
+  for (const profile of NAME_PROFILES) {
+    if (r < profile.weight) {
+      selected = profile;
+      break;
+    }
+    r -= profile.weight;
+  }
+  const fName = selected.firsts[Math.floor(Math.random() * selected.firsts.length)];
+  const lName = selected.lasts[Math.floor(Math.random() * selected.lasts.length)];
+  return `${fName} ${lName}`;
+}
 
 // Strategies list
 const STRATEGIES = ['day_trader', 'hodler', 'whale', 'value_investor', 'panic_seller'];
@@ -57,9 +98,7 @@ function initializeTraders() {
   traders = [userTrader];
   
   for (let i = 1; i < TOTAL_TRADERS; i++) {
-    const fName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const name = `${fName} ${lName}`;
+    const name = generateRealisticName();
     const id = 500000 + i;
     
     // Distribute strategy
