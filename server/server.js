@@ -796,16 +796,71 @@ app.post('/api/stats/daily_update', async (req, res) => {
     }
 });
 
+// Helper function to ensure daily stats always reflect true real-time database trade numbers
+async function getAggregatedStats() {
+    const DailyStat = require('./models/DailyStat');
+    const Trade = require('./models/Trade');
+    const dailyStats = await DailyStat.find({});
+    const allTrades = await Trade.find({});
+    
+    const statsMap = {};
+    
+    dailyStats.forEach(s => {
+        statsMap[s.dateStr] = {
+            dateStr: s.dateStr,
+            todayTradesCount: s.todayTradesCount || 0,
+            todayBuyCount: s.todayBuyCount || 0,
+            todaySellCount: s.todaySellCount || 0,
+            todayClientProfit: s.todayClientProfit || 0,
+            todayClientLoss: s.todayClientLoss || 0,
+            _id: s._id
+        };
+    });
+    
+    const tradeMap = {};
+    allTrades.forEach(t => {
+        const dateStr = new Date(t.closeTime || t.openTime || Date.now()).toDateString();
+        if (!tradeMap[dateStr]) {
+            tradeMap[dateStr] = {
+                dateStr,
+                todayTradesCount: 0,
+                todayBuyCount: 0,
+                todaySellCount: 0,
+                todayClientProfit: 0,
+                todayClientLoss: 0
+            };
+        }
+        const item = tradeMap[dateStr];
+        item.todayTradesCount++;
+        if (t.type === 'Rise' || t.type === 'BUY') item.todayBuyCount++;
+        else item.todaySellCount++;
+        
+        if ((t.pnl || 0) > 0) item.todayClientProfit += t.pnl;
+        else if ((t.pnl || 0) < 0) item.todayClientLoss += Math.abs(t.pnl);
+    });
+    
+    Object.keys(tradeMap).forEach(date => {
+        if (!statsMap[date]) {
+            statsMap[date] = tradeMap[date];
+        } else {
+            // Guarantee that actual client trades in database override smaller simulation counters
+            statsMap[date].todayTradesCount = Math.max(statsMap[date].todayTradesCount, tradeMap[date].todayTradesCount);
+            statsMap[date].todayBuyCount = Math.max(statsMap[date].todayBuyCount, tradeMap[date].todayBuyCount);
+            statsMap[date].todaySellCount = Math.max(statsMap[date].todaySellCount, tradeMap[date].todaySellCount);
+            statsMap[date].todayClientProfit = Math.max(statsMap[date].todayClientProfit, tradeMap[date].todayClientProfit);
+            statsMap[date].todayClientLoss = Math.max(statsMap[date].todayClientLoss, tradeMap[date].todayClientLoss);
+        }
+    });
+    
+    return Object.values(statsMap).sort((a, b) => new Date(b.dateStr) - new Date(a.dateStr));
+}
+
 app.get('/api/stats/daily_update', async (req, res) => {
     try {
-        const DailyStat = require('./models/DailyStat');
+        const history = await getAggregatedStats();
         const dateStr = new Date().toDateString();
-        const stat = await DailyStat.findOne({ dateStr: dateStr });
-        if (stat) {
-            res.json({ success: true, stats: stat });
-        } else {
-            res.json({ success: true, stats: null });
-        }
+        const stat = history.find(s => s.dateStr === dateStr);
+        res.json({ success: true, stats: stat || null });
     } catch (err) {
         console.error("Error fetching daily stats:", err);
         res.status(500).json({ success: false });
@@ -814,9 +869,8 @@ app.get('/api/stats/daily_update', async (req, res) => {
 
 app.get('/api/stats/history', async (req, res) => {
     try {
-        const DailyStat = require('./models/DailyStat');
-        const history = await DailyStat.find({}).sort({ _id: -1 }).limit(30);
-        res.json({ success: true, history });
+        const history = await getAggregatedStats();
+        res.json({ success: true, history: history.slice(0, 30) });
     } catch (err) {
         console.error("Error fetching daily stats history:", err);
         res.status(500).json({ success: false });
