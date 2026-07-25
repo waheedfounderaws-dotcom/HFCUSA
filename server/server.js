@@ -796,6 +796,24 @@ app.post('/api/stats/daily_update', async (req, res) => {
     }
 });
 
+function getPKTDateString(timestamp) {
+    const d = timestamp ? new Date(timestamp) : new Date();
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Karachi',
+            weekday: 'short',
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric'
+        }).formatToParts(d);
+        const map = {};
+        parts.forEach(p => { map[p.type] = p.value; });
+        return `${map.weekday} ${map.month} ${map.day} ${map.year}`;
+    } catch (e) {
+        return d.toDateString();
+    }
+}
+
 // Helper function to ensure daily stats always reflect true real-time database trade numbers
 async function getAggregatedStats() {
     const DailyStat = require('./models/DailyStat');
@@ -819,7 +837,7 @@ async function getAggregatedStats() {
     
     const tradeMap = {};
     allTrades.forEach(t => {
-        const dateStr = new Date(t.closeTime || t.openTime || Date.now()).toDateString();
+        const dateStr = getPKTDateString(t.closeTime || t.openTime || t.createdAt || Date.now());
         if (!tradeMap[dateStr]) {
             tradeMap[dateStr] = {
                 dateStr,
@@ -858,7 +876,7 @@ async function getAggregatedStats() {
 app.get('/api/stats/daily_update', async (req, res) => {
     try {
         const history = await getAggregatedStats();
-        const dateStr = new Date().toDateString();
+        const dateStr = req.query.dateStr || getPKTDateString();
         const stat = history.find(s => s.dateStr === dateStr) || {
             dateStr: dateStr,
             todayTradesCount: 0,

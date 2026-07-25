@@ -111,10 +111,27 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
   const [customDateStats, setCustomDateStats] = useState(null);
+  const [liveDbStats, setLiveDbStats] = useState(null);
 
   const [selYear, selMonth, selDay] = (selectedSettlementDate || '').split('-').map(Number);
   const selectedDateStr = (selYear && selMonth && selDay) ? new Date(selYear, selMonth - 1, selDay).toDateString() : new Date().toDateString();
   const isSelectedToday = selectedDateStr === new Date().toDateString();
+
+  useEffect(() => {
+    const fetchLiveDbStats = () => {
+      fetch(`${API_BASE_URL}/api/stats/daily_update`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.stats) {
+            setLiveDbStats(data.stats);
+            if (window.simWorker) window.simWorker.postMessage({ type: 'HYDRATE_DAILY_STATS', payload: data.stats });
+          }
+        }).catch(err => console.error("Error fetching live db stats:", err));
+    };
+    fetchLiveDbStats();
+    const interval = setInterval(fetchLiveDbStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!isSelectedToday) {
@@ -387,7 +404,15 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               </div>
 
               {(() => {
-                const displayStats = isSelectedToday ? (state.globalStats || {}) : (customDateStats || { todayTradesCount: 0, todayBuyCount: 0, todaySellCount: 0, todayClientProfit: 0, todayClientLoss: 0 });
+                const globalStats = state.globalStats || {};
+                const mergedTodayStats = {
+                  todayTradesCount: Math.max(globalStats.todayTradesCount || 0, liveDbStats?.todayTradesCount || 0),
+                  todayBuyCount: Math.max(globalStats.todayBuyCount || 0, liveDbStats?.todayBuyCount || 0),
+                  todaySellCount: Math.max(globalStats.todaySellCount || 0, liveDbStats?.todaySellCount || 0),
+                  todayClientProfit: Math.max(globalStats.todayClientProfit || 0, liveDbStats?.todayClientProfit || 0),
+                  todayClientLoss: Math.max(globalStats.todayClientLoss || 0, liveDbStats?.todayClientLoss || 0)
+                };
+                const displayStats = isSelectedToday ? mergedTodayStats : (customDateStats || { todayTradesCount: 0, todayBuyCount: 0, todaySellCount: 0, todayClientProfit: 0, todayClientLoss: 0 });
                 const net = (displayStats.todayClientLoss || 0) - (displayStats.todayClientProfit || 0);
                 return (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
