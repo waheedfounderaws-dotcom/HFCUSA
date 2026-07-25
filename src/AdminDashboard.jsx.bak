@@ -1,0 +1,995 @@
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, Users, TrendingUp, TrendingDown, DollarSign, Activity, Zap, Pause, Play, RefreshCw, AlertTriangle, Settings, UserMinus, Key, MessageSquare, Plus, FileText, CheckCircle, BarChart2, ArrowUpRight } from 'lucide-react';
+
+export default function AdminDashboard({ state, onTriggerShock, onUpdateConfig, onResetSim, onAdminAction, onChartControl }) {
+  const userRole = state?.userState?.role || 'user';
+  const userPerms = state?.userState?.permissions || [];
+  const hasPerm = (tab) => userRole === 'king_admin' || userPerms.includes(tab);
+
+  const allTabs = ['overview', 'users', 'support', 'news', 'rebate', 'transfers', 'chart'];
+  const firstAllowed = allTabs.find(hasPerm) || 'overview';
+  const [activeTab, setActiveTab] = useState(firstAllowed);
+
+  return (
+    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+        <div style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ShieldAlert size={28} />
+        </div>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Admin Control Panel
+            {userRole === 'king_admin' && <span style={{ fontSize: '12px', background: 'rgba(255,215,0,0.1)', color: '#FFD700', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(255,215,0,0.3)' }}>👑 King Admin</span>}
+            {userRole === 'admin' && <span style={{ fontSize: '12px', background: 'rgba(52,199,89,0.1)', color: 'var(--success)', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(52,199,89,0.3)' }}>🛡️ Admin</span>}
+          </h1>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Advanced Moderation & Platform Control</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+        {hasPerm('overview') && (
+          <button className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('overview')}>
+            <Activity size={16} /> Overview & Engine
+          </button>
+        )}
+        {hasPerm('users') && (
+          <button className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('users')}>
+            <Users size={16} /> User Management
+          </button>
+        )}
+        {hasPerm('support') && (
+          <button className={`btn ${activeTab === 'support' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('support')}>
+            <MessageSquare size={16} /> Customer Support
+          </button>
+        )}
+        {hasPerm('news') && (
+          <button className={`btn ${activeTab === 'news' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('news')}>
+            <FileText size={16} /> News Publishing
+          </button>
+        )}
+        {hasPerm('rebate') && (
+          <button className={`btn ${activeTab === 'rebate' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('rebate')}>
+            <DollarSign size={16} /> Rebate Settings
+          </button>
+        )}
+        {hasPerm('transfers') && (
+          <button className={`btn ${activeTab === 'transfers' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('transfers')}>
+            <ArrowUpRight size={16} /> Pending Transfers
+          </button>
+        )}
+        {hasPerm('chart') && (
+          <button className={`btn ${activeTab === 'chart' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('chart')}>
+            <BarChart2 size={16} /> Chart Control
+          </button>
+        )}
+      </div>
+
+      {/* Tab Content */}
+      <div style={{ marginTop: '8px' }}>
+        {activeTab === 'overview' && hasPerm('overview') && (
+          <OverviewTab state={state} onUpdateConfig={onUpdateConfig} onTriggerShock={onTriggerShock} onResetSim={onResetSim} />
+        )}
+        {activeTab === 'users' && hasPerm('users') && (
+          <UserManagementTab state={state} onAdminAction={onAdminAction} />
+        )}
+        {activeTab === 'support' && hasPerm('support') && (
+          <SupportTab state={state} onAdminAction={onAdminAction} />
+        )}
+        {/* Other tabs would be implemented similarly */}
+      </div>
+
+    </div>
+  );
+}
+
+function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim }) {
+  const { globalStats = {} } = state;
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const handleSpeedChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setSpeedMultiplier(val);
+    onUpdateConfig(undefined, val, undefined, undefined);
+  };
+
+  const handleTogglePause = () => {
+    const newPaused = !isPaused;
+    setIsPaused(newPaused);
+    onUpdateConfig(undefined, undefined, newPaused, undefined);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div className="stats-grid">
+        <div className="card stat-card">
+          <div className="stat-icon-container primary"><Users size={19}/></div>
+          <div className="stat-info">
+            <span className="stat-label">Active Traders</span>
+            <span className="stat-value">{(globalStats.totalTraders ?? 3120).toLocaleString()}</span>
+          </div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-icon-container success"><TrendingUp size={19}/></div>
+          <div className="stat-info">
+            <span className="stat-label">Trade Volume</span>
+            <span className="stat-value stat-value-mono">${(globalStats.teamVolume ?? 0).toLocaleString()}</span>
+          </div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-icon-container warning"><BarChart2 size={19}/></div>
+          <div className="stat-info">
+            <span className="stat-label">Sentiment</span>
+            <span className="stat-value">{globalStats.sentiment ?? 55}% {(globalStats.sentiment ?? 55) > 50 ? 'Bullish 🟢' : 'Bearish 🔴'}</span>
+          </div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-icon-container danger"><RefreshCw size={19}/></div>
+          <div className="stat-info">
+            <span className="stat-label">Transactions</span>
+            <span className="stat-value stat-value-mono">{(globalStats.globalTradeCount ?? 0).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+        <div className="card" style={{ padding: '24px' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '20px' }}>
+            <Settings size={20} /> Engine Controls
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>Simulation Speed (Multiplier: {speedMultiplier}x)</label>
+              <input type="range" min="0.1" max="5" step="0.1" value={speedMultiplier} onChange={handleSpeedChange} style={{ width: '100%', accentColor: 'var(--primary)' }} />
+            </div>
+            <button 
+              onClick={handleTogglePause}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: isPaused ? 'var(--success)' : 'var(--danger)', color: '#fff', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              {isPaused ? <><Play size={18} /> Resume Engine</> : <><Pause size={18} /> Pause Engine</>}
+            </button>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="card">
+            <div className="card-title">Macro Simulator Controls</div>
+            <div className="event-injection-grid">
+              <div className="event-card bull-btn" onClick={() => onTriggerShock('BULL')}>
+                <span className="event-card-title" style={{ color: 'var(--success)' }}>Trigger Bull Run 📈</span>
+              </div>
+              <div className="event-card crash-btn" onClick={() => onTriggerShock('CRASH')}>
+                <span className="event-card-title" style={{ color: 'var(--danger)' }}>Trigger Market Crash 📉</span>
+              </div>
+              <div className="event-card crypto-btn" onClick={() => onTriggerShock('CRYPTO_HYP')}>
+                <span className="event-card-title" style={{ color: 'var(--primary)' }}>Trigger Crypto Hype ⚡</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="card" style={{ padding: '24px', border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.02)' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '12px', color: '#ef4444' }}><AlertTriangle size={20} /> Danger Zone</h3>
+        <button className="btn btn-danger" onClick={onResetSim} style={{ width: 'max-content', padding: '10px 24px' }}>
+          <RefreshCw size={16} /> Hard Reset Simulation
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UserManagementTab({ state, onAdminAction }) {
+  const [targetId, setTargetId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [realUsers, setRealUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const currentUser = state?.userState || {};
+  const [selectedRole, setSelectedRole] = useState('user');
+  const [selectedPerms, setSelectedPerms] = useState({ overview: false, users: false, support: false, news: false, rebate: false, transfers: false, chart: false });
+  const [assigningRole, setAssigningRole] = useState(false);
+
+  const fetchUsers = () => {
+    fetch('http://localhost:3001/api/admin/users')
+      .then(res => res.json())
+      .then(data => { if (data.success) setRealUsers(data.users); setLoadingUsers(false); })
+      .catch(err => { console.error(err); setLoadingUsers(false); });
+  };
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const handleAssignRole = async () => {
+    if (!targetId) return alert('Select a user first');
+    setAssigningRole(true);
+    const newPerms = Object.keys(selectedPerms).filter(k => selectedPerms[k]);
+    try {
+      const res = await fetch('http://localhost:3001/api/admin/assign-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: targetId, newRole: selectedRole, newPermissions: newPerms, requesterId: currentUser.id })
+      });
+      const data = await res.json();
+      if (data.success) { alert('Role updated!'); fetchUsers(); }
+      else { alert(data.message || 'Failed'); }
+    } catch (err) { console.error(err); }
+    setAssigningRole(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '16px' }}>
+          <Users size={20} color="var(--primary)" /> All Registered Users
+        </h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>ID</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>NAME</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>ROLE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {realUsers.map(u => (
+              <tr key={u.id} onClick={() => setTargetId(u.id)} style={{ cursor: 'pointer', background: targetId === u.id ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent' }}>
+                <td style={{ padding: '12px' }}>{u.id}</td>
+                <td style={{ padding: '12px' }}>{u.name}</td>
+                <td style={{ padding: '12px' }}>
+                  {u.role === 'king_admin' && '👑 King Admin'}
+                  {u.role === 'admin' && '🛡️ Admin'}
+                  {u.role === 'user' && '👤 User'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ padding: '24px' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '16px' }}>
+          <DollarSign size={20} color="var(--success)" /> User Financial Controls
+        </h3>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+          <input type="number" placeholder="User ID" className="form-input" value={targetId} onChange={e => setTargetId(e.target.value)} />
+          <input type="number" placeholder="Amount (USDT)" className="form-input" value={amount} onChange={e => setAmount(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn btn-success" onClick={async () => {
+                        window._lastKnownBackendBalance = (window._lastKnownBackendBalance || 0) + amt; // prevent polling from double-counting
+                    }
+                    await fetch('http://localhost:3001/api/admin/force_adjust', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: targetId.toString(), amount: amt, isDeposit: true })
+                    });
+                } catch(e) { console.error(e); }
+            }
+          }}><Plus size={16} /> Force Deposit</button>
+          
+          <button className="btn btn-danger" onClick={async () => {
+             if(targetId && amount) {
+                onAdminAction('ADMIN_ADJUST_BALANCE', { userId: targetId.toString(), amount: parseFloat(amount), isDeposit: false });
+                
+                try {
+                    const amt = parseFloat(amount);
+                    if (targetId.toString() === state.userState?.id?.toString()) {
+                        window._lastKnownBackendBalance = Math.max(0, (window._lastKnownBackendBalance || 0) - amt);
+                    }
+                    await fetch('http://localhost:3001/api/admin/force_adjust', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: targetId.toString(), amount: amt, isDeposit: false })
+                    });
+                } catch(e) { console.error(e); }
+             }
+          }}><TrendingDown size={16} /> Force Withdraw</button>
+        </div>
+      </div>
+
+      {/* Account Controls */}
+      <div className="card" style={{ padding: '24px' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '16px' }}>
+          <Users size={20} color="var(--primary)" /> Account Controls
+        </h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+          <div style={{ border: '1px solid var(--border-color)', padding: '16px', borderRadius: '12px' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Change Password</h4>
+            <input type="password" placeholder="New Password" className="form-input" style={{ marginBottom: '12px' }} />
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => alert('Simulated password change successful!')}>
+              <Key size={16} /> Update Password
+            </button>
+          </div>
+
+          <div style={{ border: '1px solid rgba(239, 68, 68, 0.3)', padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.02)' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#ef4444' }}>Ban / Remove User</h4>
+            <input type="number" placeholder="Target User ID" className="form-input" value={targetId} onChange={e => setTargetId(e.target.value)} style={{ marginBottom: '12px' }} />
+            <button className="btn btn-danger" style={{ width: '100%' }} onClick={() => {
+              if (targetId) onAdminAction('ADMIN_REMOVE_USER', { userId: parseInt(targetId) });
+            }}>
+              <UserMinus size={16} /> Terminate Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   SUPPORT TAB
+   ========================================= */
+function SupportTab({ state, onAdminAction }) {
+  const { supportTickets = [] } = state;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [replyTexts, setReplyTexts] = useState({});
+
+  const handleReply = (id) => {
+    if (!replyTexts[id]?.trim()) return;
+    onAdminAction('ADMIN_REPLY_TICKET', { id, text: replyTexts[id] });
+    setReplyTexts(prev => ({ ...prev, [id]: '' }));
+  };
+
+  const handleResolve = (id) => {
+    onAdminAction('ADMIN_RESOLVE_TICKET', { id });
+  };
+
+  const filteredTickets = supportTickets.filter(t => {
+    const query = searchQuery.toLowerCase();
+    return t.user.toLowerCase().includes(query) || 
+           t.id.toString().includes(query) || 
+           t.issue.toLowerCase().includes(query);
+  });
+
+  const queryTickets = filteredTickets.filter(t => !t.isFinancial);
+
+  const formatTime = (ts) => {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+    return `${Math.floor(diff/3600000)}h ago`;
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Search Bar */}
+      <input 
+        type="text" 
+        placeholder="Search by Username, Ticket ID, or Content..." 
+        className="form-input" 
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+      />
+
+      {/* Customer Support Section */}
+      <div className="card" style={{ padding: '24px' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '20px' }}>
+          <MessageSquare size={20} color="var(--primary)" /> Customer Queries
+        </h3>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {queryTickets.length === 0 && <div style={{ color: 'var(--text-muted)' }}>No customer queries found.</div>}
+          {queryTickets.map(ticket => (
+            <div key={ticket.id} style={{ 
+              border: '1px solid var(--border-color)', 
+              padding: '16px', 
+              borderRadius: '12px',
+              background: ticket.status === 'Closed' ? 'rgba(255,255,255,0.02)' : 'var(--bg-card)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{ticket.user} <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 'normal' }}>({ticket.id})</span></span>
+                <span style={{ 
+                  fontSize: '11px', 
+                  padding: '4px 8px', 
+                  borderRadius: '4px',
+                  background: ticket.status === 'Open' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                  color: ticket.status === 'Open' ? '#ef4444' : '#22c55e'
+                }}>
+                  {ticket.status}
+                </span>
+              </div>
+              <div style={{ margin: '0 0 16px 0' }}>
+                <p style={{ margin: '0', fontSize: '14px', color: 'var(--text-color)' }}>
+                  "{ticket.issue}"
+                </p>
+                {ticket.image && (
+                  <div style={{ marginTop: '12px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                    <img src={ticket.image} alt="Attachment" style={{ display: 'block', maxWidth: '100%', maxHeight: '150px', objectFit: 'cover' }} />
+                  </div>
+                )}
+              </div>
+
+              {ticket.replies && ticket.replies.length > 0 && (
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  {ticket.replies.map(r => (
+                    <div key={r.id} style={{ display: 'flex', gap: '8px', marginBottom: '12px', justifyContent: r.sender === 'user' ? 'flex-start' : 'flex-end' }}>
+                      <div style={{ flex: 1, maxWidth: '90%', background: r.sender === 'user' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', fontSize: '13px', border: r.sender === 'user' ? '1px solid var(--border-color)' : '1px solid rgba(59,130,246,0.2)' }}>
+                        <strong style={{ color: r.sender === 'user' ? 'var(--text-color)' : '#3b82f6', display: 'block', marginBottom: '4px' }}>
+                          {r.sender === 'user' ? ticket.user : 'You (Admin)'}
+                        </strong>
+                        <p style={{ margin: '0', color: 'var(--text-bright)' }}>{r.text}</p>
+                        {r.image && (
+                          <div style={{ marginTop: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                            <img src={r.image} alt="Attachment" style={{ display: 'block', maxWidth: '100%', maxHeight: '150px', objectFit: 'cover' }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                {ticket.status === 'Open' && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Type a reply..." 
+                      className="form-input" 
+                      style={{ flex: 1, padding: '8px 12px', minHeight: '36px', fontSize: '13px' }}
+                      value={replyTexts[ticket.id] || ''}
+                      onChange={e => setReplyTexts(prev => ({...prev, [ticket.id]: e.target.value}))}
+                    />
+                    <button className="btn btn-primary btn-sm" onClick={() => handleReply(ticket.id)} style={{ padding: '8px 16px', height: '36px' }}>
+                      Reply
+                    </button>
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{formatTime(ticket.time)}</span>
+                  {ticket.status === 'Open' && (
+                    <button className="btn btn-secondary btn-sm" onClick={() => handleResolve(ticket.id, false)}>
+                      <CheckCircle size={14} /> Mark Resolved
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+    </div>
+  );
+}
+
+/* =========================================
+   NEWS PUBLISHING TAB
+   ========================================= */
+function NewsTab({ onAdminAction }) {
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+
+  return (
+    <div className="card" style={{ padding: '24px' }}>
+      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '16px' }}>
+        <FileText size={20} color="var(--primary)" /> Publish Platform News
+      </h3>
+      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+        Broadcast a custom news flash to all users. It will appear as a popup notification globally.
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="form-group">
+          <label className="form-label">Headline Title</label>
+          <input 
+            type="text" 
+            className="form-input" 
+            placeholder="e.g., Scheduled Maintenance / Big Promotion" 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">News Description</label>
+          <textarea 
+            className="form-input" 
+            rows="4" 
+            placeholder="Details..." 
+            value={desc} 
+            onChange={e => setDesc(e.target.value)} 
+            style={{ resize: 'vertical' }}
+          />
+        </div>
+        
+        <button 
+          className="btn btn-primary" 
+          onClick={() => {
+            if (title && desc) {
+              onAdminAction('ADMIN_PUBLISH_NEWS', { title, desc });
+              setTitle(''); setDesc('');
+            }
+          }}
+          disabled={!title || !desc}
+        >
+          <Zap size={16} /> Broadcast Now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   REBATE TAB
+   ========================================= */
+function RebateTab({ state, onAdminAction }) {
+  const { leaderboard = [], userState } = state || {};
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Combine userState and leaderboard to ensure the main client is always listed first
+  const allClients = [];
+  if (userState && userState.id) {
+    allClients.push(userState);
+  }
+  leaderboard.forEach(u => {
+    if (u.id !== userState?.id) {
+      allClients.push(u);
+    }
+  });
+
+  const filteredClients = allClients.filter(c => {
+    const term = searchQuery.toLowerCase();
+    return c.name?.toLowerCase().includes(term) || String(c.id).includes(term);
+  });
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '16px' }}>
+          <DollarSign size={20} color="var(--primary)" /> Client Rebate Settings
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
+          Configure the cashback rebate amount given to each client per standard lot (1.00 volume) out of the spread when their trade closes.
+        </p>
+
+        {/* Global Stats Overview */}
+        <div style={{ display: 'flex', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px', padding: '16px', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Total Rebate Distributed</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--primary)' }}>${(state?.globalStats?.totalRebateGenerated || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          </div>
+          <div style={{ flex: '1 1 200px', padding: '16px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', borderLeft: '4px solid var(--success)' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Net Company Profit (Spread)</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--success)' }}>${((state?.globalStats?.totalSpreadCollected || 0) - (state?.globalStats?.totalRebateGenerated || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div style={{ marginBottom: '20px' }}>
+          <input
+            type="text"
+            placeholder="Search clients by name or ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              color: 'var(--text-main)',
+              fontSize: '14px',
+              outline: 'none',
+              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+            }}
+          />
+        </div>
+        
+        <div style={{ overflowX: 'auto', marginBottom: '24px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>
+                <th style={{ padding: '12px 8px' }}>Client Info</th>
+                <th style={{ padding: '12px 8px' }}>Net Worth</th>
+                <th style={{ padding: '12px 8px' }}>Active Rebate</th>
+                <th style={{ padding: '12px 8px' }}>Set New Rebate Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClients.map(client => (
+                <tr key={client.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px 8px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
+                      {client.name} 
+                      {client.id === userState?.id && <span style={{ fontSize:'10px', background:'var(--primary)', color:'#fff', padding:'2px 6px', borderRadius:'4px', marginLeft:'8px' }}>YOU</span>}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>ID: {client.id}</div>
+                  </td>
+                  <td style={{ padding: '12px 8px', fontWeight: 'bold', color: 'var(--success)', fontSize: '14px' }}>
+                    ${(client.netWorth || client.balance || 0).toLocaleString()}
+                  </td>
+                  <td style={{ padding: '12px 8px', fontWeight: 'bold', color: 'var(--primary)', fontSize: '14px' }}>
+                    ${client.rebateRate || 0}
+                  </td>
+                  <td style={{ padding: '12px 8px' }}>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[10, 12, 15, 21].map(rate => {
+                        const isActive = (client.rebateRate || 0) === rate;
+                        return (
+                          <button 
+                            key={rate}
+                            onClick={() => onAdminAction && onAdminAction('ADMIN_SET_REBATE', { userId: client.id, rate })}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              border: `1px solid ${isActive ? 'var(--primary)' : 'var(--border-color)'}`,
+                              background: isActive ? 'var(--primary)' : 'transparent',
+                              color: isActive ? '#fff' : 'var(--text-main)',
+                              cursor: 'pointer',
+                              fontWeight: '600',
+                              fontSize: '12px',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            ${rate}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', borderLeft: '4px solid var(--success)' }}>
+          <h4 style={{ margin: '0 0 8px 0', color: 'var(--success)' }}>How it works</h4>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+            When a client trades <strong>1.00 standard lot</strong>, they pay the full spread. They will automatically receive their assigned rebate back into their balance the moment the trade is closed. For a <strong>0.01 lot</strong> trade, a $15 rebate setting gives the client <strong>$0.15</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   CHART CONTROL TAB
+   ========================================= */
+function ChartControlTab({ state, onChartControl }) {
+  const [symbol, setSymbol] = useState('XAU');
+  const [targetPrice, setTargetPrice] = useState('');
+  const [targetDuration, setTargetDuration] = useState('10'); // Default 10 seconds
+  const [trendDuration, setTrendDuration] = useState('10'); // For trends
+
+  const handleSetTarget = (e) => {
+    e.preventDefault();
+    const tp = parseFloat(targetPrice);
+    const durationSecs = parseFloat(targetDuration) * 60;
+    if (!isNaN(tp) && tp > 0) {
+      onChartControl(symbol, tp, null, durationSecs);
+      setTargetPrice('');
+    }
+  };
+
+  const handleForceTrend = (trend) => {
+    let durationSecs = undefined;
+    if (trend !== 'NORMAL' && trendDuration) {
+      durationSecs = parseFloat(trendDuration) * 60;
+    }
+    onChartControl(symbol, undefined, trend, isNaN(durationSecs) ? undefined : durationSecs);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <BarChart2 size={20} style={{ color: 'var(--primary)' }} />
+          Chart Manipulation Engine
+        </h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+          Use these controls to subtly steer the price or violently force a trend on a specific asset.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '500px' }}>
+          
+          <div className="form-group">
+            <label className="form-label">Target Asset</label>
+            <select 
+              className="form-input" 
+              value={symbol} 
+              onChange={(e) => setSymbol(e.target.value)}
+              style={{ background: 'var(--bg-dark)' }}
+            >
+              <option value="XAU">Gold (XAU/USD)</option>
+              <option value="BTC">Bitcoin (BTC/USD)</option>
+              <option value="ETH">Ethereum (ETH/USD)</option>
+              <option value="AAPL">Apple (AAPL)</option>
+              <option value="TSLA">Tesla (TSLA)</option>
+            </select>
+          </div>
+
+          <form onSubmit={handleSetTarget} className="form-group">
+            <label className="form-label">Steer to Target Price & Duration</label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <input 
+                type="number" 
+                className="form-input" 
+                placeholder="Target Price (e.g. 3400)" 
+                value={targetPrice} 
+                onChange={(e) => setTargetPrice(e.target.value)}
+                step="0.01"
+                style={{ flex: 2, background: 'var(--bg-dark)' }}
+                required
+              />
+              <input 
+                type="number" 
+                className="form-input" 
+                placeholder="Mins" 
+                title="Duration in Minutes"
+                value={targetDuration} 
+                onChange={(e) => setTargetDuration(e.target.value)}
+                min="0.1"
+                step="0.1"
+                style={{ flex: 1, background: 'var(--bg-dark)' }}
+                required
+              />
+              <button type="submit" className="btn btn-primary" style={{ padding: '0 24px' }}>
+                Set Target
+              </button>
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>
+              The chart will smoothly steer towards this price over the specified number of minutes.
+            </span>
+          </form>
+          <div className="form-group" style={{ marginTop: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Market Trend Override</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Duration:</span>
+                <input 
+                  type="number" 
+                  className="form-input" 
+                  placeholder="Mins" 
+                  title="Duration in Minutes"
+                  value={trendDuration}
+                  onChange={(e) => setTrendDuration(e.target.value)}
+                  style={{ width: '80px', padding: '6px 10px', background: 'var(--bg-dark)' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button 
+                type="button" 
+                className="btn" 
+                style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '12px', fontWeight: 'bold' }}
+                onClick={() => handleForceTrend('BULLISH')}
+              >
+                <TrendingUp size={18} /> Bullish Trend
+              </button>
+              <button 
+                type="button" 
+                className="btn" 
+                style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '12px', fontWeight: 'bold' }}
+                onClick={() => handleForceTrend('BEARISH')}
+              >
+                <TrendingDown size={18} /> Bearish Trend
+              </button>
+              <button 
+                type="button" 
+                className="btn" 
+                style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--primary)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '12px', fontWeight: 'bold' }}
+                onClick={() => handleForceTrend('CONSOLIDATION')}
+              >
+                <Activity size={18} /> Consolidation
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ padding: '12px', fontWeight: 'bold' }}
+                onClick={() => handleForceTrend('NORMAL')}
+              >
+                <RefreshCw size={18} /> Normal (Clear)
+              </button>
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>
+              These buttons inject a persistent market sentiment into the asset without steering to a specific price.
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PendingTransfersTab({ state, onAdminAction }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const { supportTickets = [] } = state;
+  const financialTickets = supportTickets.filter(t => t.isFinancial);
+
+  const handleResolve = async (id, approve = false) => {
+    const ticket = supportTickets.find(t => t.id === id);
+    
+    // If Admin approves a WITHDRAWAL, trigger the real Cryptomus Payout API!
+    if (approve && ticket && ticket.isFinancial && ticket.actionType === 'WITHDRAW') {
+        try {
+            alert("Initiating secure Payout via Cryptomus...");
+            const response = await fetch('http://localhost:3001/api/cryptomus/payout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: ticket.amount,
+                    currency: "USDT",
+                    to_address: ticket.walletAddress || "test_address", // Using provided wallet address
+                    userId: ticket.userId || "user_123"
+                })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                alert("Withdrawal successfully processed by Cryptomus! Funds have been sent.");
+            } else {
+                alert("Withdrawal failed: " + (data.message || "Unknown error"));
+                return; // Do not resolve ticket if payout fails!
+            }
+        } catch (error) {
+            console.error("Payout error:", error);
+            alert("Could not reach payment server. Make sure the backend is running.");
+            return;
+        }
+    }
+
+    onAdminAction('ADMIN_RESOLVE_TICKET', { id, approve });
+  };
+
+  const formatTime = (ts) => {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+    return `${Math.floor(diff/3600000)}h ago`;
+  };
+
+  const fetchRequests = async () => {
+    try {
+      const res = await fetch(`http://localhost:3001/api/admin/transfers`);
+      const data = await res.json();
+      if (data.success) {
+        setRequests(data.requests);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchRequests();
+    const interval = setInterval(fetchRequests, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleApprove = async (requestId) => {
+    try {
+      const res = await fetch(`http://localhost:3001/api/admin/approve_transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Transfer approved!");
+        fetchRequests();
+      } else {
+        alert(data.message || "Approval failed.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error.");
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Financial Approvals Section (Deposits/Withdrawals) */}
+      <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '20px', color: 'var(--text-bright)' }}>
+          <DollarSign size={20} color="var(--success)" /> Financial Approvals
+        </h3>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {financialTickets.length === 0 && <div style={{ color: 'var(--text-muted)' }}>No pending financial requests.</div>}
+          {financialTickets.map(ticket => (
+            <div key={ticket.id} style={{ 
+              border: '1px solid var(--border-color)', 
+              padding: '16px', 
+              borderRadius: '12px',
+              background: ticket.status === 'Closed' ? 'rgba(255,255,255,0.02)' : 'var(--bg-card)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{ticket.user} <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 'normal' }}>({ticket.id})</span></span>
+                <span style={{ 
+                  fontSize: '11px', 
+                  padding: '4px 8px', 
+                  borderRadius: '4px',
+                  background: ticket.status === 'Open' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                  color: ticket.status === 'Open' ? '#ef4444' : '#22c55e'
+                }}>
+                  {ticket.status}
+                </span>
+              </div>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-color)' }}>
+                <strong style={{ color: ticket.actionType === 'DEPOSIT' ? 'var(--success)' : 'var(--danger)' }}>[{ticket.actionType}] </strong> 
+                {ticket.issue.includes('(From Rebate Wallet)') ? (
+                  <>
+                    {ticket.issue.split('(From Rebate Wallet)')[0]}
+                    <span style={{ color: '#ec4899', fontWeight: 'bold', background: 'rgba(236,72,153,0.1)', padding: '2px 6px', borderRadius: '4px', margin: '0 4px', display: 'inline-block' }}>(From Rebate Wallet)</span>
+                    {ticket.issue.split('(From Rebate Wallet)')[1]}
+                  </>
+                ) : ticket.issue.includes('(From Claimed Rebate)') ? (
+                  <>
+                    {ticket.issue.split('(From Claimed Rebate)')[0]}
+                    <span style={{ color: '#ec4899', fontWeight: 'bold', background: 'rgba(236,72,153,0.1)', padding: '2px 6px', borderRadius: '4px', margin: '0 4px', display: 'inline-block' }}>(From Claimed Rebate)</span>
+                    {ticket.issue.split('(From Claimed Rebate)')[1]}
+                  </>
+                ) : (
+                  ticket.issue
+                )}
+              </p>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{formatTime(ticket.time)}</span>
+                {ticket.status === 'Open' && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleResolve(ticket.id, false)}>
+                      Reject
+                    </button>
+                    <button className="btn btn-success btn-sm" onClick={() => handleResolve(ticket.id, true)}>
+                      Approve
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Database Rebate Transfers Section */}
+      <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+        <h3 style={{ margin: '0 0 20px 0', color: 'var(--text-bright)' }}>Pending Rebate Transfers</h3>
+      {loading ? (
+        <div style={{ color: 'var(--text-muted)' }}>Loading...</div>
+      ) : requests.length === 0 ? (
+        <div style={{ color: 'var(--text-muted)' }}>No pending transfer requests.</div>
+      ) : (
+        <table className="trading-table">
+          <thead>
+            <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <th style={{ padding: '12px' }}>Request ID</th>
+              <th style={{ padding: '12px' }}>User ID</th>
+              <th style={{ padding: '12px' }}>Amount (USDT)</th>
+              <th style={{ padding: '12px' }}>Date</th>
+              <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map(req => (
+              <tr key={req._id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <td style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '12px' }}>{req._id}</td>
+                <td style={{ padding: '12px', fontWeight: 'bold' }}>{req.userId}</td>
+                <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 'bold' }}>${req.amount.toFixed(2)}</td>
+                <td style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '12px' }}>{new Date(req.createdAt).toLocaleString()}</td>
+                <td style={{ padding: '12px', textAlign: 'right' }}>
+                  <button 
+                    onClick={() => handleApprove(req._id)}
+                    style={{ background: 'var(--success)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Approve
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      </div>
+    </div>
+  );
+}
