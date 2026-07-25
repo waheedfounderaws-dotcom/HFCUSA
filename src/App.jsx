@@ -24,53 +24,6 @@ function App() {
     globalActiveBetsRef.current = globalActiveBets;
     simWorker.postMessage({ type: 'SYNC_ACTIVE_BETS', payload: globalActiveBets });
   }, [globalActiveBets]);
-
-  // Live Sync Client Active Bets & Open Positions to Server for Admin Monitoring
-  useEffect(() => {
-    const syncActiveTradesToServer = () => {
-      try {
-        const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
-        const userId = savedUser.id;
-        if (!userId || userId === 'admin') return;
-        const userName = savedUser.nickname || savedUser.name || 'Client';
-        const activePositions = simState.userState?.openPositions || [];
-        const activeBets = globalActiveBetsRef.current || [];
-        
-        const allActive = [
-          ...activePositions.map(p => ({
-            id: p.id || Math.random().toString(),
-            symbol: p.symbol || 'XAU/USD',
-            type: p.type, // 'BUY' or 'SELL'
-            entryPrice: p.entryPrice,
-            marginUsed: p.margin || p.volume || 0,
-            pnl: p.pnl || 0,
-            isBet: false
-          })),
-          ...activeBets.map(b => ({
-            id: b.id || Math.random().toString(),
-            symbol: b.symbol || 'XAU/USD',
-            type: b.type, // 'Rise' or 'Fall'
-            entryPrice: b.entryPrice,
-            marginUsed: b.amount,
-            pnl: 0,
-            isBet: true
-          }))
-        ];
-        
-        fetch(`${API_BASE_URL}/api/trades/active/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, userName, activeTrades: allActive })
-        }).catch(() => {});
-      } catch (e) {
-        // ignore errors
-      }
-    };
-
-    syncActiveTradesToServer();
-    const interval = setInterval(syncActiveTradesToServer, 4000);
-    return () => clearInterval(interval);
-  }, [globalActiveBets, simState.userState?.openPositions]);
   const [activeFunc, setActiveFunc] = useState(null);
   const [walletModal, setWalletModal] = useState(null); // 'TOPUP', 'WITHDRAW', 'TRANSFER'
   const [modalMethod, setModalMethod] = useState('USDT TRC-20');
@@ -124,6 +77,53 @@ function App() {
     })(),
     marketEvent: null
   });
+
+  // Live Sync Client Active Bets & Open Positions to Server for Admin Monitoring
+  useEffect(() => {
+    const syncActiveTradesToServer = () => {
+      try {
+        const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
+        const userId = savedUser.id;
+        if (!userId || userId === 'admin') return;
+        const userName = savedUser.nickname || savedUser.name || 'Client';
+        const activePositions = simState.userState?.openPositions || [];
+        const activeBets = globalActiveBetsRef.current || [];
+        
+        const allActive = [
+          ...activePositions.map(p => ({
+            id: p.id || Math.random().toString(),
+            symbol: p.symbol || 'XAU/USD',
+            type: p.type, // 'BUY' or 'SELL'
+            entryPrice: p.entryPrice,
+            marginUsed: p.margin || p.volume || 0,
+            pnl: p.pnl || 0,
+            isBet: false
+          })),
+          ...activeBets.map(b => ({
+            id: b.id || Math.random().toString(),
+            symbol: b.symbol || 'XAU/USD',
+            type: b.type, // 'Rise' or 'Fall'
+            entryPrice: b.entryPrice,
+            marginUsed: b.amount,
+            pnl: 0,
+            isBet: true
+          }))
+        ];
+        
+        fetch(`${API_BASE_URL}/api/trades/active/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, userName, activeTrades: allActive })
+        }).catch(() => {});
+      } catch (e) {
+        // ignore errors
+      }
+    };
+
+    syncActiveTradesToServer();
+    const interval = setInterval(syncActiveTradesToServer, 4000);
+    return () => clearInterval(interval);
+  }, [globalActiveBets, simState.userState?.openPositions]);
 
   // Handle login success
   const handleLoginSuccess = (userData) => {
