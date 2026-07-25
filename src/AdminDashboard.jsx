@@ -106,6 +106,28 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
   const [historyTrades, setHistoryTrades] = useState([]);
   const [tradesSearchQuery, setTradesSearchQuery] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedSettlementDate, setSelectedSettlementDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [customDateStats, setCustomDateStats] = useState(null);
+
+  const [selYear, selMonth, selDay] = (selectedSettlementDate || '').split('-').map(Number);
+  const selectedDateStr = (selYear && selMonth && selDay) ? new Date(selYear, selMonth - 1, selDay).toDateString() : new Date().toDateString();
+  const isSelectedToday = selectedDateStr === new Date().toDateString();
+
+  useEffect(() => {
+    if (!isSelectedToday) {
+      fetch(`${API_BASE_URL}/api/stats/history`).then(res => res.json()).then(data => {
+        if (data.success && data.history) {
+          const found = data.history.find(h => h.dateStr === selectedDateStr);
+          setCustomDateStats(found || { todayTradesCount: 0, todayBuyCount: 0, todaySellCount: 0, todayClientProfit: 0, todayClientLoss: 0 });
+        }
+      }).catch(err => console.error("Error fetching date stats:", err));
+    } else {
+      setCustomDateStats(null);
+    }
+  }, [selectedSettlementDate, isSelectedToday]);
 
   const openHistory = () => {
     setShowHistoryModal(true);
@@ -131,6 +153,14 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         if (window.simWorker) window.simWorker.postMessage({ type: 'HYDRATE_DAILY_STATS', payload: data.stats });
       }
     }).catch(err => console.error("Refresh error:", err));
+    if (!isSelectedToday) {
+      fetch(`${API_BASE_URL}/api/stats/history`).then(res => res.json()).then(data => {
+        if (data.success && data.history) {
+          const found = data.history.find(h => h.dateStr === selectedDateStr);
+          setCustomDateStats(found || { todayTradesCount: 0, todayBuyCount: 0, todaySellCount: 0, todayClientProfit: 0, todayClientLoss: 0 });
+        }
+      }).catch(err => console.error("Error fetching date stats:", err));
+    }
     if (showHistoryModal) {
       openHistory();
     }
@@ -320,12 +350,31 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', flexWrap: 'wrap', gap: '10px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-bright)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  Today's Overall Settlement
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#06b6d4', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', padding: '3px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    📅 Date: {new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                    <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>| Session: 12:00 AM - 11:59 PM (Resets Daily)</span>
-                  </span>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-bright)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span>{isSelectedToday ? "Today's Overall Settlement" : "Selected Day Settlement"}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', padding: '4px 10px', borderRadius: '6px' }}>
+                    <span style={{ fontSize: '14px' }}>📅</span>
+                    <input 
+                      type="date" 
+                      value={selectedSettlementDate}
+                      onChange={(e) => setSelectedSettlementDate(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', color: '#06b6d4', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', outline: 'none', fontFamily: 'var(--font-mono)' }}
+                    />
+                    {!isSelectedToday && (
+                      <button 
+                        onClick={() => {
+                          const d = new Date();
+                          setSelectedSettlementDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                        }}
+                        style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'var(--text-bright)', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        Reset to Today
+                      </button>
+                    )}
+                    <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: 'normal', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '8px' }}>
+                      {isSelectedToday ? 'Live (Resets 12:00 AM)' : `Records for ${selectedDateStr}`}
+                    </span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={handleRefreshStats} style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(6,182,212,0.2)' }}>
@@ -336,39 +385,41 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
                   </button>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Today's Total Trades</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--text-bright)' }}>{state.globalStats?.todayTradesCount || 0}</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Today's Buys</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{state.globalStats?.todayBuyCount || 0}</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Today's Sells</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--danger)' }}>{state.globalStats?.todaySellCount || 0}</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Clients Profit</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: '#10b981' }}>+${(state.globalStats?.todayClientProfit || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Clients Loss</div>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: '#ef4444' }}>-${(state.globalStats?.todayClientLoss || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Company Net Profit</div>
-                  {(() => {
-                    const net = (state.globalStats?.todayClientLoss || 0) - (state.globalStats?.todayClientProfit || 0);
-                    return (
+
+              {(() => {
+                const displayStats = (!isSelectedToday && customDateStats) ? customDateStats : (state.globalStats || {});
+                const net = (displayStats.todayClientLoss || 0) - (displayStats.todayClientProfit || 0);
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>{isSelectedToday ? "Today's Total Trades" : "Day's Total Trades"}</div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--text-bright)' }}>{displayStats.todayTradesCount || 0}</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>{isSelectedToday ? "Today's Buys" : "Day's Buys"}</div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>{displayStats.todayBuyCount || 0}</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>{isSelectedToday ? "Today's Sells" : "Day's Sells"}</div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: 'var(--danger)' }}>{displayStats.todaySellCount || 0}</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Clients Profit</div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: '#10b981' }}>+${(displayStats.todayClientProfit || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Clients Loss</div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: '#ef4444' }}>-${(displayStats.todayClientLoss || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Company Net Profit</div>
                       <div style={{ fontSize: '24px', fontWeight: 'bold', fontFamily: 'var(--font-mono)', color: net >= 0 ? '#10b981' : '#ef4444' }}>
                         {net >= 0 ? '+' : '-'}${Math.abs(net).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
                       </div>
-                    );
-                  })()}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
