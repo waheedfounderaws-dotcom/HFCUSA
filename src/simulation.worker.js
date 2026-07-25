@@ -104,12 +104,12 @@ function initializeTraders() {
     // Distribute strategy
     const strategy = STRATEGIES[Math.floor(Math.random() * STRATEGIES.length)];
     
-    // Balance range based on strategy
+    // Balance range based on strategy (strictly within $10k for realistic trading accounts)
     let balance = 0;
     if (strategy === 'whale') {
-      balance = Math.floor(Math.random() * 500000) + 100000; // Whales have $100k-$600k
+      balance = Math.floor(Math.random() * 4800) + 5000 + (Math.random() * 0.99); // Whales have $5,000 - $9,800
     } else {
-      balance = Math.floor(Math.random() * 15000) + 500; // Others have $500-$15.5k
+      balance = Math.floor(Math.random() * 4500) + 250 + (Math.random() * 0.99); // Others have $250 - $4,750
     }
     
     // Holdings initialization
