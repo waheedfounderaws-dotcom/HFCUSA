@@ -422,6 +422,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
                       <th style={{ padding: '12px 8px' }}>Type</th>
                       <th style={{ padding: '12px 8px' }}>Amount</th>
                       <th style={{ padding: '12px 8px' }}>PnL</th>
+                      <th style={{ padding: '12px 8px', textAlign: 'center' }}>Result</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -441,8 +442,23 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
                         <td style={{ padding: '12px 8px' }}>{trade.symbol}</td>
                         <td style={{ padding: '12px 8px', color: trade.type === 'Rise' || trade.type === 'BUY' ? 'var(--success)' : 'var(--danger)' }}>{trade.type}</td>
                         <td style={{ padding: '12px 8px' }}>${(trade.amount || trade.volume || 0).toFixed(2)}</td>
-                        <td style={{ padding: '12px 8px', color: trade.pnl > 0 ? 'var(--success)' : trade.pnl < 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                        <td style={{ padding: '12px 8px', color: trade.pnl > 0 ? 'var(--success)' : trade.pnl < 0 ? 'var(--danger)' : 'var(--text-muted)', fontWeight: 'bold' }}>
                           {trade.pnl > 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                          {trade.pnl > 0 ? (
+                            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', display: 'inline-block' }}>
+                              🏆 WIN
+                            </span>
+                          ) : trade.pnl < 0 ? (
+                            <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', display: 'inline-block' }}>
+                              🔴 LOSE
+                            </span>
+                          ) : (
+                            <span style={{ background: 'rgba(156, 163, 175, 0.15)', color: '#9ca3af', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', display: 'inline-block' }}>
+                              ⚖️ DRAW
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
