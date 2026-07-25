@@ -554,7 +554,7 @@ function DownloadModule() {
       <Download size={40} style={{ color: 'var(--primary)', marginBottom: '16px' }} />
       <h2 style={{ color: '#fff', fontSize: '24px', fontFamily: 'var(--font-display)', marginBottom: '8px' }}>Get the Mobile Application</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '400px', margin: '0 auto 24px', lineHeight: '140%' }}>
-        Take your high-performance trading simulator on the go. Sync accounts seamlessly across desktop and mobile devices.
+        Take your trading platform on the go. Sync accounts seamlessly across desktop and mobile devices.
       </p>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', flexWrap: 'wrap' }}>
@@ -624,14 +624,14 @@ function OfficialModule() {
     <div className="sub-module-content" style={{ padding: '8px' }}>
       <div className="card-title" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <ShieldAlert size={24} style={{ color: 'var(--success)' }} />
+          <ShieldCheck size={24} style={{ color: 'var(--success)' }} />
           <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-bright)' }}>Official System Whitepaper</span>
         </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.7' }}>
         <p>
-          HFCusa is an experimental decentralized trading simulator engine utilizing Web Workers to calculate high-frequency financial activities for 3000+ simultaneous algorithmic AI traders. It models basic economic feedback loops in a completely client-side sandbox environment.
+          HFCusa is an advanced financial trading platform utilizing real-time calculation engines for market activities. It models seamless execution and analytics in a robust trading environment.
         </p>
 
         <p>
