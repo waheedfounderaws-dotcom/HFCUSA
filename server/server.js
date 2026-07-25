@@ -859,7 +859,11 @@ app.get('/api/stats/daily_update', async (req, res) => {
     try {
         const history = await getAggregatedStats();
         const dateStr = new Date().toDateString();
-        const stat = history.find(s => s.dateStr === dateStr);
+        let stat = history.find(s => s.dateStr === dateStr);
+        // If no trades have been made yet after midnight rollover, maintain display of latest active session stats
+        if ((!stat || (stat.todayTradesCount || 0) === 0) && history.length > 0) {
+            stat = history[0];
+        }
         res.json({ success: true, stats: stat || null });
     } catch (err) {
         console.error("Error fetching daily stats:", err);

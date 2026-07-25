@@ -1338,13 +1338,11 @@ onmessage = function(e) {
 
     case 'HYDRATE_DAILY_STATS':
       if (payload) {
-        if (payload.dateStr === currentDayStr) {
-            todayTradesCount = payload.todayTradesCount || 0;
-            todayBuyCount = payload.todayBuyCount || 0;
-            todaySellCount = payload.todaySellCount || 0;
-            todayClientLoss = payload.todayClientLoss || 0;
-            todayClientProfit = payload.todayClientProfit || 0;
-        }
+        todayTradesCount = payload.todayTradesCount || 0;
+        todayBuyCount = payload.todayBuyCount || 0;
+        todaySellCount = payload.todaySellCount || 0;
+        todayClientLoss = payload.todayClientLoss || 0;
+        todayClientProfit = payload.todayClientProfit || 0;
       }
       break;
 
