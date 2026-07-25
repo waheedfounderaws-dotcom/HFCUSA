@@ -631,7 +631,7 @@ function OfficialModule() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.7' }}>
         <p>
-          AlphaQuest is an experimental decentralized trading simulator engine utilizing Web Workers to calculate high-frequency financial activities for 3000+ simultaneous algorithmic AI traders. It models basic economic feedback loops in a completely client-side sandbox environment.
+          HFCusa is an experimental decentralized trading simulator engine utilizing Web Workers to calculate high-frequency financial activities for 3000+ simultaneous algorithmic AI traders. It models basic economic feedback loops in a completely client-side sandbox environment.
         </p>
 
         <p>
@@ -656,7 +656,7 @@ function ServiceModule({ state, onAdminAction, onClose }) {
 
   // Initialize messages from existing open ticket
   const initialMessages = [
-    { id: 1, sender: 'bot', text: "Hello! Welcome to AlphaQuest Helpdesk. I'm your interactive helper bot. You can ask me questions or submit a ticket to our Live Admins." }
+    { id: 1, sender: 'bot', text: "Hello! Welcome to HFCusa Helpdesk. I'm your interactive helper bot. You can ask me questions or submit a ticket to our Live Admins." }
   ];
   const initialSeenReplies = new Set();
   

@@ -112,7 +112,7 @@ function App() {
     simWorker.postMessage({ type: 'LOGIN_USER', payload: userData });
     
     // Hydrate tickets for this specific user
-    const savedTickets = localStorage.getItem(`alphaQuest_supportTickets_${userData.id}`);
+    const savedTickets = localStorage.getItem(`HFCusa_supportTickets_${userData.id}`) || localStorage.getItem(`alphaQuest_supportTickets_${userData.id}`);
     if (savedTickets) {
       try {
         simWorker.postMessage({ type: 'HYDRATE_TICKETS', payload: JSON.parse(savedTickets) });
@@ -259,7 +259,7 @@ function App() {
           lastUpdateRef.current = now;
 
           if (data.supportTickets && data.userState?.id) {
-            localStorage.setItem(`alphaQuest_supportTickets_${data.userState.id}`, JSON.stringify(data.supportTickets));
+            localStorage.setItem(`HFCusa_supportTickets_${data.userState.id}`, JSON.stringify(data.supportTickets));
           }
           if (data.userState) {
             localStorage.setItem('aq_userData', JSON.stringify(data.userState));
@@ -315,7 +315,7 @@ function App() {
             userData.permissions = ['overview', 'users', 'support', 'news', 'rebate', 'transfers', 'chart'];
         }
         simWorker.postMessage({ type: 'LOGIN_USER', payload: userData });
-        const savedTickets = localStorage.getItem(`alphaQuest_supportTickets_${userData.id}`);
+        const savedTickets = localStorage.getItem(`HFCusa_supportTickets_${userData.id}`) || localStorage.getItem(`alphaQuest_supportTickets_${userData.id}`);
         if (savedTickets) {
           simWorker.postMessage({ type: 'HYDRATE_TICKETS', payload: JSON.parse(savedTickets) });
         }
@@ -800,7 +800,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand">
           <Coins className="brand-logo" size={28} />
-          <span className="brand-name">AlphaQuest <span style={{fontSize: '10px', color: 'red'}}>[{simState.userState?.id}:{simState.userState?.role}]</span></span>
+          <span className="brand-name">HFCusa <span style={{fontSize: '10px', color: 'red'}}>[{simState.userState?.id}:{simState.userState?.role}]</span></span>
         </div>
 
         <ul className="nav-menu">

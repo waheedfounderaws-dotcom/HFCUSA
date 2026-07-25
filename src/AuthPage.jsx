@@ -166,7 +166,7 @@ export default function AuthPage({ onLoginSuccess }) {
           color: '#fff',
           letterSpacing: '0.3px'
         }}>
-          AlphaQuest — Secure Login
+          HFCusa — Secure Login
         </span>
       </div>
 
@@ -522,7 +522,7 @@ export default function AuthPage({ onLoginSuccess }) {
             </button>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', lineHeight: '140%' }}>
-              By registering, you agree to the AlphaQuest Terms of Service and Privacy Policy.
+              By registering, you agree to the HFCusa Terms of Service and Privacy Policy.
             </p>
           </form>
         )}
@@ -629,7 +629,7 @@ export default function AuthPage({ onLoginSuccess }) {
       {/* Bottom branding */}
       <div style={{ marginTop: '24px', textAlign: 'center' }}>
         <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-          🔒 Secured by AlphaQuest. All data is simulated.
+          🔒 Secured by HFCusa. All data is simulated.
         </p>
       </div>
 
@@ -680,7 +680,7 @@ export default function AuthPage({ onLoginSuccess }) {
       {/* Footer */}
       <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px' }}>
         <Lock size={14} style={{ color: '#f59e0b' }} />
-        Secured by AlphaQuest. All data is simulated.
+        Secured by HFCusa. All data is simulated.
       </div>
 
       {/* Spinner keyframe */}
