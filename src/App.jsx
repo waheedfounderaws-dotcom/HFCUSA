@@ -169,6 +169,14 @@ function App() {
     }
   };
 
+  const getActiveUserId = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('aq_userData') || '{}');
+      if (u && u.id && u.id.toString() !== 'admin') return u.id.toString();
+    } catch(e) {}
+    return simState.userState?.id?.toString() || "525810";
+  };
+
   // Handle logout — called from LogoutModule
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -176,6 +184,7 @@ function App() {
     localStorage.removeItem('aq_userData');
     setActiveFunc(null);
     setActiveTab('my');
+    simWorker.postMessage({ type: 'LOGOUT_USER' });
   };
 
 
@@ -332,7 +341,11 @@ function App() {
         // Optimistically update lastKnownBackendBalance to prevent double counting on next sync
         window._lastKnownBackendBalance = (window._lastKnownBackendBalance || 0) + (payload.trade.pnl || 0);
         
-        const realUserId = simState.userState?.id?.toString() || "525810";
+        let realUserId = "525810";
+        try {
+          const u = JSON.parse(localStorage.getItem('aq_userData') || '{}');
+          if (u && u.id && u.id.toString() !== 'admin') realUserId = u.id.toString();
+        } catch(e) {}
         fetch(`${API_BASE_URL}/api/trades/close`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -378,7 +391,7 @@ function App() {
         try {
             // Always read the latest user ID from localStorage to avoid React stale closures
             const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
-            const userId = savedUser.id || "525810";
+            const userId = (savedUser && savedUser.id && savedUser.id.toString() !== 'admin') ? savedUser.id.toString() : "525810";
             
             // INSTANT PRIORITY: Sync Database Balance FIRST before slow history tables!
             const res = await fetch(`${API_BASE_URL}/api/balance/${userId}`);

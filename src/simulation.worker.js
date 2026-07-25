@@ -1171,12 +1171,9 @@ onmessage = function(e) {
       if (userTrader) {
           const dbTrades = payload.trades || [];
           
-          // Only add trades that aren't already in betRecords to prevent duplicates
-          const newTrades = dbTrades.filter(dbT => !userTrader.betRecords.some(localT => localT.id === dbT.id));
-          
-          if (newTrades.length > 0) {
+          if (dbTrades.length > 0) {
               // Convert DB Trade format to UI format
-              const formattedTrades = newTrades.map(t => ({
+              const formattedTrades = dbTrades.map(t => ({
                   id: t.id,
                   symbol: t.symbol,
                   type: t.type,
@@ -1190,16 +1187,32 @@ onmessage = function(e) {
                   closeTime: t.closeTime
               }));
               
-              userTrader.betRecords = [...formattedTrades, ...userTrader.betRecords];
-              userTrader.betRecords.sort((a, b) => new Date(b.closeTime) - new Date(a.closeTime));
+              // Combine and strictly deduplicate by ID and fingerprint so duplicate or combined trades never stack up
+              const combined = [...formattedTrades, ...userTrader.betRecords];
+              const uniqueMap = new Map();
+              combined.forEach(t => {
+                  const key = t.id ? String(t.id) : `${t.symbol}_${t.entryPrice}_${t.closePrice}_${t.closeTime}`;
+                  if (!uniqueMap.has(key)) uniqueMap.set(key, t);
+              });
               
-              // We no longer add the user's own trades to rebateHistory 
-              // because the rebate goes to their referrer, not themselves.
+              userTrader.betRecords = Array.from(uniqueMap.values());
+              userTrader.betRecords.sort((a, b) => new Date(b.closeTime) - new Date(a.closeTime));
               
               if (userTrader.betRecords.length > 100) userTrader.betRecords.length = 100; // Limit history
               
               sendStateUpdate();
           }
+      }
+      break;
+    }
+
+    case 'LOGOUT_USER': {
+      if (userTrader) {
+        userTrader.betRecords = [];
+        userTrader.transactions = [];
+        userTrader.openPositions = [];
+        userTrader.pendingOrders = [];
+        sendStateUpdate();
       }
       break;
     }
