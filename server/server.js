@@ -823,3 +823,5 @@ app.listen(PORT, '0.0.0.0', () => {
     startNewsFetcher();
     console.log(`Webhook URL: http://localhost:${PORT}/api/cryptomus/webhook`);
 });
+
+module.exports = app;
