@@ -20,9 +20,51 @@ function App() {
   const [activeTab, setActiveTab] = useState('my');
   const [globalActiveBets, setGlobalActiveBets] = useState([]);
   const globalActiveBetsRef = useRef([]);
+  const simStateRef = useRef(null);
+
+  const syncActiveTradesToServer = () => {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
+      const curState = simStateRef.current || {};
+      const userId = curState.userState?.id || savedUser.id || window._lastKnownUserId;
+      if (!userId) return;
+      const userName = curState.userState?.name || curState.userState?.nickname || savedUser.nickname || savedUser.name || `Client ${userId}`;
+      const activePositions = curState.userState?.openPositions || [];
+      const activeBets = globalActiveBetsRef.current || [];
+      
+      const allActive = [
+        ...activePositions.map(p => ({
+          id: p.id || Math.random().toString(),
+          symbol: p.symbol || 'XAU/USD',
+          type: p.type, // 'BUY' or 'SELL'
+          entryPrice: p.entryPrice,
+          marginUsed: p.margin || p.volume || 0,
+          pnl: p.pnl || 0,
+          isBet: false
+        })),
+        ...activeBets.map(b => ({
+          id: b.id || Math.random().toString(),
+          symbol: b.symbol || 'XAU/USD',
+          type: b.type, // 'Rise' or 'Fall'
+          entryPrice: b.entryPrice,
+          marginUsed: b.amount,
+          pnl: 0,
+          isBet: true
+        }))
+      ];
+      
+      fetch(`${API_BASE_URL}/api/trades/active/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId.toString(), userName, activeTrades: allActive })
+      }).catch(() => {});
+    } catch (e) {}
+  };
+
   useEffect(() => {
     globalActiveBetsRef.current = globalActiveBets;
     simWorker.postMessage({ type: 'SYNC_ACTIVE_BETS', payload: globalActiveBets });
+    syncActiveTradesToServer();
   }, [globalActiveBets]);
   const [activeFunc, setActiveFunc] = useState(null);
   const [walletModal, setWalletModal] = useState(null); // 'TOPUP', 'WITHDRAW', 'TRANSFER'
@@ -77,53 +119,14 @@ function App() {
     })(),
     marketEvent: null
   });
+  useEffect(() => { simStateRef.current = simState; }, [simState]);
 
   // Live Sync Client Active Bets & Open Positions to Server for Admin Monitoring
   useEffect(() => {
-    const syncActiveTradesToServer = () => {
-      try {
-        const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
-        const userId = simState.userState?.id || savedUser.id || window._lastKnownUserId;
-        if (!userId) return;
-        const userName = simState.userState?.name || simState.userState?.nickname || savedUser.nickname || savedUser.name || `Client ${userId}`;
-        const activePositions = simState.userState?.openPositions || [];
-        const activeBets = globalActiveBetsRef.current || [];
-        
-        const allActive = [
-          ...activePositions.map(p => ({
-            id: p.id || Math.random().toString(),
-            symbol: p.symbol || 'XAU/USD',
-            type: p.type, // 'BUY' or 'SELL'
-            entryPrice: p.entryPrice,
-            marginUsed: p.margin || p.volume || 0,
-            pnl: p.pnl || 0,
-            isBet: false
-          })),
-          ...activeBets.map(b => ({
-            id: b.id || Math.random().toString(),
-            symbol: b.symbol || 'XAU/USD',
-            type: b.type, // 'Rise' or 'Fall'
-            entryPrice: b.entryPrice,
-            marginUsed: b.amount,
-            pnl: 0,
-            isBet: true
-          }))
-        ];
-        
-        fetch(`${API_BASE_URL}/api/trades/active/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, userName, activeTrades: allActive })
-        }).catch(() => {});
-      } catch (e) {
-        // ignore errors
-      }
-    };
-
     syncActiveTradesToServer();
-    const interval = setInterval(syncActiveTradesToServer, 4000);
+    const interval = setInterval(syncActiveTradesToServer, 3000);
     return () => clearInterval(interval);
-  }, [globalActiveBets, simState.userState?.openPositions]);
+  }, []);
 
   // Handle login success
   const handleLoginSuccess = (userData) => {

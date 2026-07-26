@@ -963,6 +963,7 @@ export default function CandlestickChart({
     const hl     = hlRef.current;
     if (!canvas || !hl || !canvas._geo) return;
 
+    const theme = themeColors.current;
     const rect = canvas.getBoundingClientRect();
     const mx   = e.clientX - rect.left;
     const my   = e.clientY - rect.top;
