@@ -244,7 +244,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         </h3>
         
         {(() => {
-          const allActiveTrades = [
+          const rawActive = [
             ...(serverActiveTrades || []),
             ...(globalActiveBets || []).map(bet => ({
               id: bet.id || Math.random().toString(),
@@ -258,6 +258,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               isBet: true
             }))
           ];
+          const allActiveTrades = Array.from(new Map(rawActive.map(t => [t.id, t])).values());
 
           if (allActiveTrades.length === 0) {
             return (
@@ -322,11 +323,11 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         </h3>
         
         {(() => {
-          const allActiveTrades = [
-            ...(state.activeTrades || []),
+          const rawActive = [
+            ...(serverActiveTrades || []),
             ...(globalActiveBets || []).map(bet => ({
               id: bet.id || Math.random().toString(),
-              traderName: state.userState?.name || 'Admin',
+              traderName: state.userState?.name || state.userState?.nickname || 'Admin',
               traderId: state.userState?.id || 'admin',
               symbol: bet.symbol || 'XAU/USD',
               type: bet.type,
@@ -336,6 +337,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
               isBet: true
             }))
           ];
+          const allActiveTrades = Array.from(new Map(rawActive.map(t => [t.id, t])).values());
 
           const totalTrades = allActiveTrades.length;
           const totalMargin = allActiveTrades.reduce((sum, t) => sum + (t.marginUsed || 0), 0);

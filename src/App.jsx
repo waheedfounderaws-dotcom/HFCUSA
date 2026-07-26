@@ -83,9 +83,9 @@ function App() {
     const syncActiveTradesToServer = () => {
       try {
         const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
-        const userId = savedUser.id;
-        if (!userId || userId === 'admin') return;
-        const userName = savedUser.nickname || savedUser.name || 'Client';
+        const userId = simState.userState?.id || savedUser.id || window._lastKnownUserId;
+        if (!userId) return;
+        const userName = simState.userState?.name || simState.userState?.nickname || savedUser.nickname || savedUser.name || `Client ${userId}`;
         const activePositions = simState.userState?.openPositions || [];
         const activeBets = globalActiveBetsRef.current || [];
         
