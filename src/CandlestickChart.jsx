@@ -531,6 +531,9 @@ export default function CandlestickChart({
     }
 
     const tfs = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
+    const currentBucket = Math.floor(Date.now() / (tfs * 1000)) * (tfs * 1000);
+    const targetCloseTs = currentBucket + (tfs * 1000);
+    
     const bet = {
       id: String(Date.now() + Math.random()),
       symbol: asset.symbol,
@@ -538,8 +541,10 @@ export default function CandlestickChart({
       amount: amt,
       entryPrice: livePriceRef.current ?? asset.basePrice,
       placedTs: Date.now(),
-      timeframe: tfKey,
-      resolveBucket: Math.floor(Date.now() / (tfs * 1000)) * (tfs * 1000)
+      timeframe: showLine ? 'Line (1m)' : tfKey,
+      tfs: tfs,
+      targetCloseTs: targetCloseTs,
+      resolveBucket: currentBucket
     };
 
     activeBetsRef.current = [...activeBetsRef.current, bet];
@@ -1182,7 +1187,7 @@ export default function CandlestickChart({
                     <div style={{ fontSize:'11px', color:'var(--text-muted)', marginTop:'2px' }}>Entry: {Number(bet.entryPrice).toFixed(3)}</div>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
-                    <div style={{ fontSize:'10px', color:'var(--text-muted)', fontWeight:'600' }}>Resolves at candle close</div>
+                    <div style={{ fontSize:'10px', color:'var(--text-muted)', fontWeight:'600' }}>Resolves at {bet.timeframe || '1m'} candle close</div>
                     <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--success)' }}>Profit: +${(bet.amount * 0.95).toFixed(2)}</div>
                   </div>
                 </div>

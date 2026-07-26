@@ -260,8 +260,9 @@ function App() {
            globalActiveBetsRef.current.forEach(bet => {
               const dMs = (bet.tfs || 60) * 1000;
               const bkTs = Math.floor(data.timestamp / dMs) * dMs;
+              const shouldClose = bet.targetCloseTs ? (data.timestamp >= bet.targetCloseTs) : (bkTs > bet.placedTs);
               
-              if (bkTs > bet.placedTs) {
+              if (shouldClose) {
                   const matchSymbol = bet.symbol.split('/')[0];
                   const stock = data.stocks.find(s => s.symbol === matchSymbol);
                   if (stock) {
