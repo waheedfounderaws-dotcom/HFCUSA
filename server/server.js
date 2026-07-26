@@ -8,6 +8,7 @@ const { handleCryptomusWebhook } = require('./webhookController');
 const { processWithdrawal } = require('./payoutController');
 const User = require('./models/User');
 const News = require('./models/News');
+const ActiveClientTrade = require('./models/ActiveClientTrade');
 const { startNewsFetcher } = require('./newsFetcher');
 
 const app = express();
@@ -337,52 +338,50 @@ app.post('/api/admin/force_adjust', async (req, res) => {
     }
 });
 
-// Real-Time Active Client Trades Server Registry for Admin Monitoring
-const activeClientTradesStore = new Map();
-
-app.post('/api/trades/active/sync', (req, res) => {
+// Real-Time Active Client Trades Server Registry for Admin Monitoring (MongoDB Persistence for Vercel/Serverless)
+app.post('/api/trades/active/sync', async (req, res) => {
     try {
         const { userId, userName, activeTrades = [] } = req.body;
         if (!userId) return res.status(400).json({ success: false, message: "Missing userId" });
         
         if (activeTrades && activeTrades.length > 0) {
-            activeClientTradesStore.set(userId.toString(), {
-                userId: userId.toString(),
-                userName: userName || userId,
-                trades: activeTrades,
-                updated: Date.now()
-            });
+            await ActiveClientTrade.findOneAndUpdate(
+                { userId: userId.toString() },
+                { userId: userId.toString(), userName: userName || userId.toString(), trades: activeTrades, updated: Date.now() },
+                { upsert: true, new: true }
+            );
         } else {
-            activeClientTradesStore.delete(userId.toString());
+            await ActiveClientTrade.deleteOne({ userId: userId.toString() });
         }
         res.json({ success: true });
     } catch (e) {
-        console.error("Error syncing active trades:", e);
+        console.error("Error syncing active trades to DB:", e);
         res.status(500).json({ success: false });
     }
 });
 
-app.get('/api/trades/active/all', (req, res) => {
+app.get('/api/trades/active/all', async (req, res) => {
     try {
         const now = Date.now();
+        const thirtyMinsAgo = now - (30 * 60 * 1000);
+        
+        // Automatically prune stale disconnected sessions older than 30 mins
+        await ActiveClientTrade.deleteMany({ updated: { $lt: thirtyMinsAgo } });
+        
+        const activeDocs = await ActiveClientTrade.find({});
         const allTrades = [];
-        for (const [uid, data] of activeClientTradesStore.entries()) {
-            // Filter out stale client trade feeds older than 30 minutes
-            if (now - data.updated < 30 * 60 * 1000) {
-                (data.trades || []).forEach(t => {
-                    allTrades.push({
-                        ...t,
-                        traderId: uid,
-                        traderName: data.userName || t.traderName || uid,
-                    });
+        for (const doc of activeDocs) {
+            (doc.trades || []).forEach(t => {
+                allTrades.push({
+                    ...t,
+                    traderId: doc.userId,
+                    traderName: doc.userName || t.traderName || doc.userId
                 });
-            } else {
-                activeClientTradesStore.delete(uid);
-            }
+            });
         }
         res.json({ success: true, activeTrades: allTrades });
     } catch (e) {
-        console.error("Error fetching all active trades:", e);
+        console.error("Error fetching all active trades from DB:", e);
         res.status(500).json({ success: false });
     }
 });
