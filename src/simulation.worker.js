@@ -6,19 +6,34 @@
 function getUniversalPrice(symbol, timestampMs = Date.now()) {
   const isGold = symbol ? (symbol.startsWith('XAU') || symbol === 'XAU') : true;
   const basePrice = isGold ? 3325.00 : 105200.00;
-  const vol = isGold ? 15.0 : 950.0;
+  const scale = isGold ? 1.0 : 32.0;
   
   const t = timestampMs / 1000.0;
-  const wave1 = Math.sin(t / 3600.0 * 2 * Math.PI * 2) * (vol * 0.40);
-  const wave2 = Math.sin(t / 900.0 * 2 * Math.PI * 3 + 1.5) * (vol * 0.25);
-  const wave3 = Math.cos(t / 180.0 * 2 * Math.PI * 5 + 0.8) * (vol * 0.20);
-  const wave4 = Math.sin(t / 30.0 * 2 * Math.PI * 7 + 2.3) * (vol * 0.10);
   
-  const tickSlot = Math.floor(t * 2);
+  // 1. Macro Swings (Multi-day & Daily trends)
+  const macro1 = Math.sin(t / (11.5 * 86400) * 2 * Math.PI) * (45.0 * scale);
+  const macro2 = Math.sin(t / (4.2 * 86400) * 2 * Math.PI + 1.8) * (28.0 * scale);
+  const daily  = Math.cos(t / (1.3 * 86400) * 2 * Math.PI + 4.2) * (18.0 * scale);
+  
+  // 2. Intermediate Swings (4-Hour & 1-Hour waves)
+  const h4     = Math.sin(t / (6.8 * 3600) * 2 * Math.PI + 0.9) * (12.0 * scale);
+  const h1     = Math.cos(t / (2.4 * 3600) * 2 * Math.PI + 2.5) * (7.5 * scale);
+  
+  // 3. Intraday Trends (15m to 30m continuity)
+  const m30    = Math.sin(t / (52.0 * 60) * 2 * Math.PI + 5.1) * (4.2 * scale);
+  const m15    = Math.cos(t / (19.0 * 60) * 2 * Math.PI + 3.7) * (2.4 * scale);
+  
+  // 4. Micro Candlestick Movements (1m & 5m real-world oscillations)
+  const m5     = Math.sin(t / (7.2 * 60) * 2 * Math.PI + 1.2) * (1.3 * scale);
+  const m1     = Math.cos(t / (2.8 * 60) * 2 * Math.PI + 0.4) * (0.65 * scale);
+  
+  // 5. Live Tick Jitters (Seconds-level micro ticks)
+  const secW   = Math.sin(t / 28.0 * 2 * Math.PI) * (0.22 * scale);
+  const tickSlot = Math.floor(t * 1.5);
   const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : 313.313)) * 43758.5453;
-  const noise = (seedNoise - Math.floor(seedNoise) - 0.5) * (vol * 0.10);
+  const tickNoise = (seedNoise - Math.floor(seedNoise) - 0.5) * (0.18 * scale);
   
-  const price = basePrice + wave1 + wave2 + wave3 + wave4 + noise;
+  const price = basePrice + macro1 + macro2 + daily + h4 + h1 + m30 + m15 + m5 + m1 + secW + tickNoise;
   return Number(price.toFixed(2));
 }
 
