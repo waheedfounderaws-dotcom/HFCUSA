@@ -1048,19 +1048,41 @@ export default function CandlestickChart({
   /* ───────────────────────────────────────────
      Interactions (Pan & Zoom)
   ─────────────────────────────────────────── */
-  const handleMouseDown = (e) => {
+  /* ───────────────────────────────────────────
+     Unified Pointer Events (Mouse, Touch & Stylus) with Pointer Capture for Guaranteed Vertical Scaling & Panning
+  ─────────────────────────────────────────── */
+  const handlePointerDown = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    if (e.pointerId && e.currentTarget.setPointerCapture) {
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+    }
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const geo = canvas._geo;
-    if(!geo) return;
-    
+    if (!geo) return;
+    const now = Date.now();
+
+    // Double tap/click within 300ms resets scale and pan on mobile touch & PC
+    if (interactRef.current.lastTapTime && (now - interactRef.current.lastTapTime < 300)) {
+      setPriceRange(null);
+      setZoomX(1);
+      setPanX(0);
+      clearCrosshair();
+      interactRef.current.lastTapTime = 0;
+      return;
+    }
+    interactRef.current.lastTapTime = now;
+
     let dragZone = 'MAIN';
-    if (mx >= geo.chartW - 35) dragZone = 'PRICE';
-    else if (my >= geo.chartH - 25) dragZone = 'TIME';
-    
+    // Generous 60px tolerance (or right 22% of screen) for Price Column touch scaling!
+    if (mx >= geo.chartW - 60 || (e.pointerType === 'touch' && mx > geo.chartW * 0.78)) {
+      dragZone = 'PRICE';
+    } else if (my >= geo.chartH - 25) {
+      dragZone = 'TIME';
+    }
+
     interactRef.current = {
        isDragging: true,
        dragZone,
@@ -1069,26 +1091,35 @@ export default function CandlestickChart({
        startZoomX: zoomX,
        startPanX: panX,
        startPriceRange: priceRange || (geo ? { max: geo.pTop, min: geo.pBot } : null) || canvas._currentPriceRange,
+       lastTapTime: now,
+       pointerId: e.pointerId,
+       hasMoved: false,
     };
-    clearCrosshair();
+    drawCrosshair(e);
   };
   
-  const handleInteractiveMouseMove = (e) => {
+  const handlePointerMove = (e) => {
     const inter = interactRef.current;
-    if (inter.isDragging) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (inter && inter.isDragging) {
       const dx = e.clientX - inter.startX;
       const dy = e.clientY - inter.startY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        inter.hasMoved = true;
+      }
       
       if (inter.dragZone === 'TIME') {
-         // Zoom X
+         // Zoom X via bottom timeline drag
          const factor = Math.max(0.1, Math.min(10, 1 + (dx / 200)));
          setZoomX(inter.startZoomX * factor);
       } 
       else if (inter.dragZone === 'PRICE') {
-         // Zoom Y (Vertical Scale Compression / Expansion)
-         const factor = Math.max(0.1, Math.min(10, 1 + (dy / 200)));
+         // Vertical Y-axis compression & expansion (chota / bara) on touch and mouse!
+         const factor = Math.max(0.1, Math.min(10, 1 + (dy / 160)));
          const r = inter.startPriceRange;
-         if (r) {
+         if (r && r.max !== r.min) {
              const mid = (r.max + r.min) / 2;
              const span = (r.max - r.min) * factor;
              setPriceRange({ max: mid + span/2, min: mid - span/2 });
@@ -1096,72 +1127,48 @@ export default function CandlestickChart({
       }
       else if (inter.dragZone === 'MAIN') {
          // Pan X
-         setPanX(inter.startPanX + dx);
+         const speed = e.pointerType === 'touch' ? 1.35 : 1;
+         setPanX(inter.startPanX + (dx * speed));
          
-         // Pan Y (if manually scaled)
-         if (priceRange && inter.startPriceRange && canvasRef.current._geo) {
+         // Pan Y (if vertically dragged or manually scaled)
+         if (inter.startPriceRange && canvas._geo) {
            const r = inter.startPriceRange;
-           const shiftY = (dy / canvasRef.current._geo.chartH) * (r.max - r.min);
-           setPriceRange({ max: r.max + shiftY, min: r.min + shiftY });
+           const shiftY = (dy / canvas._geo.chartH) * (r.max - r.min);
+           if (Math.abs(dy) > 4 || priceRange) {
+             setPriceRange({ max: r.max + shiftY, min: r.min + shiftY });
+           }
          }
+         drawCrosshair(e);
       }
     } else {
       drawCrosshair(e);
     }
   };
   
-  const handleMouseUp = () => {
-    interactRef.current.isDragging = false;
+  const handlePointerUp = (e) => {
+    if (e && e.pointerId && e.currentTarget && e.currentTarget.releasePointerCapture) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+    if (interactRef.current) {
+      if (interactRef.current.hasMoved && e && e.pointerType === 'touch') {
+        setTimeout(() => { clearCrosshair(); }, 2500);
+      }
+      interactRef.current.isDragging = false;
+    }
   };
 
   /* ───────────────────────────────────────────
-     Native Non-Passive Touch Event Listeners on Container for True Mobile Touch Response
+     Dedicated Native Pinch-to-Zoom Listener for 2-Finger Multi-Touch
   ─────────────────────────────────────────── */
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const onNativeTouchStart = (e) => {
-      if (e.cancelable) e.preventDefault();
-      const st = chartStateRef.current;
-      const cvs = canvasRef.current;
-      if (!cvs || e.touches.length === 0) return;
-      const rect = cvs.getBoundingClientRect();
-      const now = Date.now();
-
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        const mx = t.clientX - rect.left;
-        const my = t.clientY - rect.top;
-        const geo = cvs._geo;
-        if (!geo) return;
-
-        if (interactRef.current.lastTapTime && (now - interactRef.current.lastTapTime < 300)) {
-          st.setPriceRange(null);
-          st.setZoomX(1);
-          st.setPanX(0);
-          st.clearCrosshair();
-          interactRef.current.lastTapTime = 0;
-          return;
-        }
-        interactRef.current.lastTapTime = now;
-
-        let dragZone = 'MAIN';
-        // Expanded 35px touch tolerance so placing thumb on price axis always scales vertically!
-        if (mx >= geo.chartW - 35) dragZone = 'PRICE';
-        else if (my >= geo.chartH - 25) dragZone = 'TIME';
-
-        interactRef.current.isDragging = true;
-        interactRef.current.isTouchPan = false;
-        interactRef.current.dragZone = dragZone;
-        interactRef.current.startX = t.clientX;
-        interactRef.current.startY = t.clientY;
-        interactRef.current.startZoomX = st.zoomX;
-        interactRef.current.startPanX = st.panX;
-        interactRef.current.startPriceRange = st.priceRange || (geo ? { max: geo.pTop, min: geo.pBot } : null) || cvs._currentPriceRange;
-
-        st.drawCrosshair({ clientX: t.clientX, clientY: t.clientY });
-      } else if (e.touches.length === 2) {
+    const onNativePinchStart = (e) => {
+      if (e.touches && e.touches.length === 2) {
+        if (e.cancelable) e.preventDefault();
+        const st = chartStateRef.current;
+        const cvs = canvasRef.current;
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
@@ -1169,44 +1176,16 @@ export default function CandlestickChart({
         interactRef.current.isDragging = false;
         interactRef.current.startPinchDist = dist || 1;
         interactRef.current.startZoomX = st.zoomX;
-        interactRef.current.startPriceRange = st.priceRange || (cvs._geo ? { max: cvs._geo.pTop, min: cvs._geo.pBot } : null) || cvs._currentPriceRange;
+        interactRef.current.startPriceRange = st.priceRange || (cvs && cvs._geo ? { max: cvs._geo.pTop, min: cvs._geo.pBot } : null) || (cvs && cvs._currentPriceRange);
         st.clearCrosshair();
       }
     };
 
-    const onNativeTouchMove = (e) => {
-      if (e.cancelable) e.preventDefault();
-      const st = chartStateRef.current;
-      const inter = interactRef.current;
-      const cvs = canvasRef.current;
-      if (!cvs) return;
-
-      if (e.touches.length === 1 && inter.isDragging && !inter.isPinching) {
-        const t = e.touches[0];
-        const dx = t.clientX - inter.startX;
-        const dy = t.clientY - inter.startY;
-
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-          inter.isTouchPan = true;
-        }
-
-        if (inter.dragZone === 'TIME') {
-          const factor = Math.max(0.1, Math.min(10, 1 + (dx / 150)));
-          st.setZoomX(inter.startZoomX * factor);
-        } else if (inter.dragZone === 'PRICE') {
-          // Vertical Y-axis compression & expansion (chota bara) on mobile thumb drag!
-          const factor = Math.max(0.1, Math.min(10, 1 + (dy / 150)));
-          const r = inter.startPriceRange;
-          if (r) {
-            const mid = (r.max + r.min) / 2;
-            const span = (r.max - r.min) * factor;
-            st.setPriceRange({ max: mid + span / 2, min: mid - span / 2 });
-          }
-        } else if (inter.dragZone === 'MAIN') {
-          st.setPanX(inter.startPanX + (dx * 1.35));
-          st.drawCrosshair({ clientX: t.clientX, clientY: t.clientY });
-        }
-      } else if (e.touches.length === 2 && inter.isPinching) {
+    const onNativePinchMove = (e) => {
+      if (e.touches && e.touches.length === 2 && interactRef.current.isPinching) {
+        if (e.cancelable) e.preventDefault();
+        const st = chartStateRef.current;
+        const inter = interactRef.current;
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
@@ -1218,31 +1197,23 @@ export default function CandlestickChart({
       }
     };
 
-    const onNativeTouchEnd = (e) => {
-      if (e.cancelable) e.preventDefault();
-      const st = chartStateRef.current;
-      const inter = interactRef.current;
-      if (inter && (inter.isTouchPan || inter.isPinching)) {
-        setTimeout(() => { st.clearCrosshair(); }, 3000);
-      }
-      if (interactRef.current) {
-        interactRef.current.isDragging = false;
+    const onNativePinchEnd = () => {
+      if (interactRef.current && interactRef.current.isPinching) {
         interactRef.current.isPinching = false;
-        interactRef.current.isTouchPan = false;
       }
     };
 
     const opts = { passive: false };
-    container.addEventListener('touchstart', onNativeTouchStart, opts);
-    container.addEventListener('touchmove', onNativeTouchMove, opts);
-    container.addEventListener('touchend', onNativeTouchEnd, opts);
-    container.addEventListener('touchcancel', onNativeTouchEnd, opts);
+    container.addEventListener('touchstart', onNativePinchStart, opts);
+    container.addEventListener('touchmove', onNativePinchMove, opts);
+    container.addEventListener('touchend', onNativePinchEnd, opts);
+    container.addEventListener('touchcancel', onNativePinchEnd, opts);
 
     return () => {
-      container.removeEventListener('touchstart', onNativeTouchStart);
-      container.removeEventListener('touchmove', onNativeTouchMove);
-      container.removeEventListener('touchend', onNativeTouchEnd);
-      container.removeEventListener('touchcancel', onNativeTouchEnd);
+      container.removeEventListener('touchstart', onNativePinchStart);
+      container.removeEventListener('touchmove', onNativePinchMove);
+      container.removeEventListener('touchend', onNativePinchEnd);
+      container.removeEventListener('touchcancel', onNativePinchEnd);
     };
   }, []);
   
@@ -1416,10 +1387,11 @@ export default function CandlestickChart({
 
           {/* ══ CANVAS ══ */}
           <div ref={containerRef} style={{ flex:'1 1 0', minHeight:0, position:'relative', background:'var(--bg-dark)', cursor:'crosshair', touchAction:'none', userSelect:'none' }}
-            onMouseMove={handleInteractiveMouseMove}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={(e) => { handleMouseUp(); clearCrosshair(); }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onPointerLeave={handlePointerUp}
             onDoubleClick={handleDoubleClick}
             onWheel={handleWheel}
           >
