@@ -400,12 +400,52 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Theme Mode Selection</label>
-          <select className="select-input" value={theme} onChange={(e) => onChangeTheme(e.target.value)}>
-            <option value="dark">Obsidian Dark Mode 🌙</option>
-            <option value="light">Premium Light Mode ☀️</option>
-            <option value="system">Follow Device System Settings 🖥️</option>
-          </select>
+          <label className="form-label" style={{ marginBottom: '10px', display: 'block' }}>Theme Mode Selection</label>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '8px',
+            background: 'var(--bg-main)',
+            padding: '6px',
+            borderRadius: '16px',
+            border: '1px solid var(--border-color)',
+            maxWidth: '500px'
+          }}>
+            {[
+              { id: 'dark', label: 'Dark Mode', icon: '🌙', desc: 'Obsidian Black' },
+              { id: 'light', label: 'Light Mode', icon: '☀️', desc: 'Bright Crystal' },
+              { id: 'system', label: 'Auto System', icon: '🖥️', desc: 'Device Sync' }
+            ].map((item) => {
+              const isSelected = theme === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onChangeTheme(item.id)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '12px 6px',
+                    borderRadius: '12px',
+                    border: isSelected ? '1.5px solid var(--primary)' : '1px solid transparent',
+                    background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'transparent',
+                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
+                    color: isSelected ? 'var(--primary)' : 'var(--text-main)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                    outline: 'none'
+                  }}
+                >
+                  <span style={{ fontSize: '22px', marginBottom: '4px' }}>{item.icon}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '800', letterSpacing: '0.3px' }}>{item.label}</span>
+                  <span style={{ fontSize: '10px', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', fontWeight: '600', opacity: 0.85, marginTop: '2px' }}>{item.desc}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px', justifyContent: 'center' }}>
