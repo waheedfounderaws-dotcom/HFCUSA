@@ -363,6 +363,7 @@ export default function CandlestickChart({
   const candlesRef   = useRef([]);     // array of closed candles
   const canvasRef    = useRef(null);
   const hlRef        = useRef(null);
+  const containerRef = useRef(null);
   const chartStateRef = useRef({});
   chartStateRef.current = { zoomX, panX, priceRange, drawCrosshair, clearCrosshair, setZoomX, setPanX, setPriceRange };
 
@@ -1057,8 +1058,8 @@ export default function CandlestickChart({
     if(!geo) return;
     
     let dragZone = 'MAIN';
-    if (mx > geo.chartW) dragZone = 'PRICE';
-    else if (my > geo.chartH) dragZone = 'TIME';
+    if (mx >= geo.chartW - 35) dragZone = 'PRICE';
+    else if (my >= geo.chartH - 25) dragZone = 'TIME';
     
     interactRef.current = {
        isDragging: true,
@@ -1067,7 +1068,7 @@ export default function CandlestickChart({
        startY: e.clientY,
        startZoomX: zoomX,
        startPanX: panX,
-       startPriceRange: priceRange || canvas._currentPriceRange,
+       startPriceRange: priceRange || (geo ? { max: geo.pTop, min: geo.pBot } : null) || canvas._currentPriceRange,
     };
     clearCrosshair();
   };
@@ -1084,7 +1085,7 @@ export default function CandlestickChart({
          setZoomX(inter.startZoomX * factor);
       } 
       else if (inter.dragZone === 'PRICE') {
-         // Zoom Y
+         // Zoom Y (Vertical Scale Compression / Expansion)
          const factor = Math.max(0.1, Math.min(10, 1 + (dy / 200)));
          const r = inter.startPriceRange;
          if (r) {
@@ -1114,11 +1115,11 @@ export default function CandlestickChart({
   };
 
   /* ───────────────────────────────────────────
-     Native Non-Passive Touch Event Listeners for True Mobile Touch Response
+     Native Non-Passive Touch Event Listeners on Container for True Mobile Touch Response
   ─────────────────────────────────────────── */
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     const onNativeTouchStart = (e) => {
       if (e.cancelable) e.preventDefault();
@@ -1146,8 +1147,9 @@ export default function CandlestickChart({
         interactRef.current.lastTapTime = now;
 
         let dragZone = 'MAIN';
-        if (mx > geo.chartW) dragZone = 'PRICE';
-        else if (my > geo.chartH) dragZone = 'TIME';
+        // Expanded 35px touch tolerance so placing thumb on price axis always scales vertically!
+        if (mx >= geo.chartW - 35) dragZone = 'PRICE';
+        else if (my >= geo.chartH - 25) dragZone = 'TIME';
 
         interactRef.current.isDragging = true;
         interactRef.current.isTouchPan = false;
@@ -1156,7 +1158,7 @@ export default function CandlestickChart({
         interactRef.current.startY = t.clientY;
         interactRef.current.startZoomX = st.zoomX;
         interactRef.current.startPanX = st.panX;
-        interactRef.current.startPriceRange = st.priceRange || cvs._currentPriceRange;
+        interactRef.current.startPriceRange = st.priceRange || (geo ? { max: geo.pTop, min: geo.pBot } : null) || cvs._currentPriceRange;
 
         st.drawCrosshair({ clientX: t.clientX, clientY: t.clientY });
       } else if (e.touches.length === 2) {
@@ -1167,7 +1169,7 @@ export default function CandlestickChart({
         interactRef.current.isDragging = false;
         interactRef.current.startPinchDist = dist || 1;
         interactRef.current.startZoomX = st.zoomX;
-        interactRef.current.startPriceRange = st.priceRange || cvs._currentPriceRange;
+        interactRef.current.startPriceRange = st.priceRange || (cvs._geo ? { max: cvs._geo.pTop, min: cvs._geo.pBot } : null) || cvs._currentPriceRange;
         st.clearCrosshair();
       }
     };
@@ -1192,6 +1194,7 @@ export default function CandlestickChart({
           const factor = Math.max(0.1, Math.min(10, 1 + (dx / 150)));
           st.setZoomX(inter.startZoomX * factor);
         } else if (inter.dragZone === 'PRICE') {
+          // Vertical Y-axis compression & expansion (chota bara) on mobile thumb drag!
           const factor = Math.max(0.1, Math.min(10, 1 + (dy / 150)));
           const r = inter.startPriceRange;
           if (r) {
@@ -1230,16 +1233,16 @@ export default function CandlestickChart({
     };
 
     const opts = { passive: false };
-    canvas.addEventListener('touchstart', onNativeTouchStart, opts);
-    canvas.addEventListener('touchmove', onNativeTouchMove, opts);
-    canvas.addEventListener('touchend', onNativeTouchEnd, opts);
-    canvas.addEventListener('touchcancel', onNativeTouchEnd, opts);
+    container.addEventListener('touchstart', onNativeTouchStart, opts);
+    container.addEventListener('touchmove', onNativeTouchMove, opts);
+    container.addEventListener('touchend', onNativeTouchEnd, opts);
+    container.addEventListener('touchcancel', onNativeTouchEnd, opts);
 
     return () => {
-      canvas.removeEventListener('touchstart', onNativeTouchStart);
-      canvas.removeEventListener('touchmove', onNativeTouchMove);
-      canvas.removeEventListener('touchend', onNativeTouchEnd);
-      canvas.removeEventListener('touchcancel', onNativeTouchEnd);
+      container.removeEventListener('touchstart', onNativeTouchStart);
+      container.removeEventListener('touchmove', onNativeTouchMove);
+      container.removeEventListener('touchend', onNativeTouchEnd);
+      container.removeEventListener('touchcancel', onNativeTouchEnd);
     };
   }, []);
   
@@ -1395,13 +1398,24 @@ export default function CandlestickChart({
                 );
               })}
             </div>
-            <div style={{ display:'flex', gap:'5px' }}>
-              {/* MA buttons removed */}
+            <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
+              <button onClick={() => setZoomX(prev => Math.min(10, prev * 1.35))} title="Zoom In"
+                style={{ padding:'2px 8px', borderRadius:'4px', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.08)', color:'var(--text-bright)', fontSize:'11px', fontWeight:'800', cursor:'pointer' }}>
+                ➕ Zoom
+              </button>
+              <button onClick={() => setZoomX(prev => Math.max(0.1, prev / 1.35))} title="Zoom Out"
+                style={{ padding:'2px 8px', borderRadius:'4px', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.08)', color:'var(--text-bright)', fontSize:'11px', fontWeight:'800', cursor:'pointer' }}>
+                ➖ Zoom
+              </button>
+              <button onClick={() => { setPriceRange(null); setZoomX(1); setPanX(0); clearCrosshair(); }} title="Reset Chart Scale"
+                style={{ padding:'2px 8px', borderRadius:'4px', border:'1px solid rgba(6,182,212,0.4)', background:'rgba(6,182,212,0.15)', color:'var(--primary)', fontSize:'11px', fontWeight:'800', cursor:'pointer', display:'flex', alignItems:'center', gap:'3px' }}>
+                🔄 Reset
+              </button>
             </div>
           </div>
 
           {/* ══ CANVAS ══ */}
-          <div style={{ flex:'1 1 0', minHeight:0, position:'relative', background:'var(--bg-dark)', cursor:'crosshair', touchAction:'none', userSelect:'none' }}
+          <div ref={containerRef} style={{ flex:'1 1 0', minHeight:0, position:'relative', background:'var(--bg-dark)', cursor:'crosshair', touchAction:'none', userSelect:'none' }}
             onMouseMove={handleInteractiveMouseMove}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
