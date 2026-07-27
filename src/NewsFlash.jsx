@@ -6,6 +6,7 @@ export default function NewsFlash({ state, onTriggerShock }) {
   const { marketEvent = null } = state;
   const [newsData, setNewsData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newsAlertsActive, setNewsAlertsActive] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/news`)
@@ -81,9 +82,20 @@ export default function NewsFlash({ state, onTriggerShock }) {
           <div style={{ display:'flex', alignItems:'center', gap:'4px', background:'rgba(16,185,129,0.15)', color:'var(--success)', padding:'4px 10px', borderRadius:'14px', fontSize:'11px', fontWeight:'800', letterSpacing:'0.5px' }}>
             <div style={{ width:'6px', height:'6px', background:'var(--success)', borderRadius:'50%' }}></div> LIVE
           </div>
-          <Bell size={20} color="var(--text-muted)" cursor="pointer" />
+          <button 
+            onClick={() => setNewsAlertsActive(!newsAlertsActive)} 
+            style={{ background: newsAlertsActive ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.04)', border: newsAlertsActive ? '1px solid var(--primary, #06b6d4)' : '1px solid rgba(255,255,255,0.08)', padding: '7px', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title={newsAlertsActive ? "Disable News Flash Alerts" : "Enable News Flash Alerts"}
+          >
+            <Bell size={18} color={newsAlertsActive ? "var(--primary, #06b6d4)" : "var(--text-muted)"} style={{ filter: newsAlertsActive ? 'drop-shadow(0 0 5px rgba(6,182,212,0.6))' : 'none' }} />
+          </button>
         </div>
       </div>
+      {newsAlertsActive && (
+        <div style={{ fontSize: '12px', color: 'var(--primary, #06b6d4)', background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '8px', padding: '8px 12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>🔔 Live real-time market event notifications and AI sentiment alerts are currently <strong>ACTIVE</strong>.</span>
+        </div>
+      )}
       <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5', marginBottom: '24px' }}>
         Live macroeconomic announcements. Inject market events to test the AI traders' reaction times.
       </p>
