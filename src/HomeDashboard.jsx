@@ -262,7 +262,7 @@ export default function HomeDashboard({ state, onNavigate }) {
           <div className="card-title">Your Trading Profile</div>
 
           <div style={{ display:'flex', alignItems:'center', gap:'14px', background:'rgba(255,255,255,0.02)', padding:'14px', borderRadius:'12px', border:'1px solid var(--border-color)' }}>
-            <div className="avatar-large" style={{ width:'52px', height:'52px', fontSize:'20px', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div className="avatar-large avatar-animated" style={{ width:'52px', height:'52px', fontSize:'20px', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
               {userState.profilePic ? (
                 <img src={userState.profilePic} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (

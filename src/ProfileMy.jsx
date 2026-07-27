@@ -66,10 +66,12 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
       {/* ── HEADER ── */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'4px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{
-            width:'40px', height:'40px', borderRadius:'50%',
+          <div 
+            className="avatar-animated"
+            style={{
+            width:'42px', height:'42px', borderRadius:'50%',
             background:'transparent',
-            border:'1px solid var(--primary)',
+            border:'1.5px solid var(--primary)',
             display:'flex', alignItems:'center', justifyContent:'center',
             fontSize:'14px', fontWeight:'800', color:'var(--primary)',
             overflow:'hidden'

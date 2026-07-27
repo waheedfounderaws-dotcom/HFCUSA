@@ -375,25 +375,35 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Profile Image Avatar</label>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span>Profile Image Avatar (Minimalist Series)</span>
+            <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '600' }}>✨ Live Animated Icons</span>
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: '16px', padding: '8px 4px' }}>
             {[
-              { id: '', label: 'Initials (No Avatar)' },
-              { id: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', label: 'Felix' },
-              { id: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', label: 'Aneka' },
-              { id: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack', label: 'Jack' },
-              { id: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Leah', label: 'Leah' },
-              { id: 'https://api.dicebear.com/7.x/avataaars/svg?seed=King', label: 'King' }
-            ].map(avatar => (
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Sophia&backgroundColor=2563eb&radius=50', label: 'Sophia (Bob & Glasses)', delay: '0s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Oliver&backgroundColor=1d4ed8&radius=50', label: 'Oliver (Hoodie & Glasses)', delay: '0.4s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Maya&backgroundColor=2563eb&radius=50', label: 'Maya (Voluminous Curls)', delay: '0.8s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Liam&backgroundColor=1e40af&radius=50', label: 'Liam (Beard & Suit)', delay: '1.2s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Emma&backgroundColor=2563eb&radius=50', label: 'Emma (Executive Bun)', delay: '0.2s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Lucas&backgroundColor=1d4ed8&radius=50', label: 'Noah (Modern Crewneck)', delay: '0.6s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Aria&backgroundColor=2563eb&radius=50', label: 'Aria (Top Bun Style)', delay: '1.0s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Benjamin&backgroundColor=1e40af&radius=50', label: 'Benjamin (Casual Beard)', delay: '1.4s' },
+              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Elena&backgroundColor=2563eb&radius=50', label: 'Elena (Flowing Hair)', delay: '0.5s' },
+              { id: '', label: 'Initials (No Avatar)', delay: '0s' }
+            ].map((avatar, idx) => (
               <div 
-                key={avatar.id} 
+                key={idx} 
                 onClick={() => setTempPic(avatar.id)}
+                className={avatar.id ? "avatar-animated" : ""}
                 style={{ 
-                  width: '60px', height: '60px', borderRadius: '50%', cursor: 'pointer',
-                  border: tempPic === avatar.id ? '3px solid var(--primary)' : '2px solid transparent',
+                  width: '68px', height: '68px', borderRadius: '50%', cursor: 'pointer',
+                  border: tempPic === avatar.id ? '3.5px solid var(--primary, #06b6d4)' : '2px solid rgba(255, 255, 255, 0.12)',
                   background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden', transition: 'all 0.2s ease',
-                  boxShadow: tempPic === avatar.id ? '0 0 12px rgba(6, 182, 212, 0.4)' : 'none'
+                  overflow: 'hidden', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  animationDelay: avatar.delay,
+                  boxShadow: tempPic === avatar.id ? '0 0 20px rgba(6, 182, 212, 0.7)' : '0 4px 10px rgba(0,0,0,0.25)',
+                  transform: tempPic === avatar.id ? 'scale(1.08)' : undefined
                 }}
                 title={avatar.label}
               >
