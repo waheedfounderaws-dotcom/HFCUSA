@@ -399,52 +399,82 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
           </div>
         </div>
 
-        <div className="form-group">
-          <label className="form-label" style={{ marginBottom: '10px', display: 'block' }}>Theme Mode Selection</label>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '8px',
-            background: 'var(--bg-main)',
-            padding: '6px',
-            borderRadius: '16px',
-            border: '1px solid var(--border-color)',
-            maxWidth: '500px'
-          }}>
-            {[
-              { id: 'dark', label: 'Dark Mode', icon: '🌙', desc: 'Obsidian Black' },
-              { id: 'light', label: 'Light Mode', icon: '☀️', desc: 'Bright Crystal' },
-              { id: 'system', label: 'Auto System', icon: '🖥️', desc: 'Device Sync' }
-            ].map((item) => {
-              const isSelected = theme === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onChangeTheme(item.id)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '12px 6px',
-                    borderRadius: '12px',
-                    border: isSelected ? '1.5px solid var(--primary)' : '1px solid transparent',
-                    background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'transparent',
-                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
-                    color: isSelected ? 'var(--primary)' : 'var(--text-main)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
-                    outline: 'none'
-                  }}
-                >
-                  <span style={{ fontSize: '22px', marginBottom: '4px' }}>{item.icon}</span>
-                  <span style={{ fontSize: '13px', fontWeight: '800', letterSpacing: '0.3px' }}>{item.label}</span>
-                  <span style={{ fontSize: '10px', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', fontWeight: '600', opacity: 0.85, marginTop: '2px' }}>{item.desc}</span>
-                </button>
-              );
-            })}
+        <div className="form-group" style={{ margin: '16px 0 24px 0' }}>
+          <label className="form-label" style={{ marginBottom: '16px', display: 'block', fontWeight: '700' }}>Theme Mode Selection</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '18px', userSelect: 'none', padding: '4px 2px' }}>
+            <span 
+              onClick={() => onChangeTheme('light')}
+              style={{
+                fontSize: '18px',
+                fontFamily: 'var(--font-display)',
+                fontWeight: theme === 'light' ? '800' : '600',
+                color: theme === 'light' ? 'var(--text-bright, #1e293b)' : '#94a3b8',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                letterSpacing: '0.3px'
+              }}
+            >
+              Light
+            </span>
+
+            <div 
+              onClick={() => onChangeTheme(theme === 'dark' ? 'light' : 'dark')}
+              style={{
+                width: '68px',
+                height: '36px',
+                background: theme === 'dark' ? '#3b82f6' : '#7898ff',
+                borderRadius: '999px',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.35), inset 0 1px 3px rgba(0,0,0,0.15)'
+              }}
+            >
+              {/* Decorative Stars & Dots inside pill switch */}
+              {theme === 'light' ? (
+                <div style={{ position: 'absolute', right: '10px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#fff', opacity: 0.75, marginBottom: '-4px' }} />
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff', boxShadow: '0 0 3px #fff' }} />
+                </div>
+              ) : (
+                <div style={{ position: 'absolute', left: '10px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff', boxShadow: '0 0 4px #fff' }} />
+                  <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#fff', opacity: 0.75, marginBottom: '4px' }} />
+                </div>
+              )}
+
+              {/* Sliding Circular Knob */}
+              <div 
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  background: '#ffffff',
+                  borderRadius: '50%',
+                  position: 'absolute',
+                  left: '4px',
+                  transform: theme === 'dark' ? 'translateX(32px)' : 'translateX(0)',
+                  transition: 'transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.28)'
+                }}
+              />
+            </div>
+
+            <span 
+              onClick={() => onChangeTheme('dark')}
+              style={{
+                fontSize: '18px',
+                fontFamily: 'var(--font-display)',
+                fontWeight: theme === 'dark' ? '800' : '600',
+                color: theme === 'dark' ? 'var(--text-bright, #f8fafc)' : '#94a3b8',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                letterSpacing: '0.3px'
+              }}
+            >
+              Dark
+            </span>
           </div>
         </div>
 
