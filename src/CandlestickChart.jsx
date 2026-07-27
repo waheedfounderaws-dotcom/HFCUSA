@@ -1155,7 +1155,10 @@ export default function CandlestickChart({
         <button onClick={() => { if (showRec) { setShowRec(false); } else { onBack(); } }} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', fontSize:'13px', fontWeight:'600', width: '70px' }}>
           <ArrowLeft size={15}/> Back
         </button>
-        <span style={{ fontWeight:'800', fontSize:'14px', color:'var(--text-bright)', fontFamily:'var(--font-display)', flex:1, textAlign:'center' }}>Options Trading</span>
+        <div style={{ flex:1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <img src="/logo-small.png" alt="HFCUSA Online" style={{ height: '24px', width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.35))' }} />
+          <span style={{ fontWeight:'900', fontSize:'15px', color:'var(--text-bright)', fontFamily:'var(--font-display)', letterSpacing: '0.5px' }}>HFCUSA <span style={{ color: 'var(--danger)', fontWeight: '900' }}>Online</span></span>
+        </div>
         <div style={{ width: '70px', display: 'flex', justifyContent: 'flex-end' }}>
           {!showRec && (
             <button onClick={() => setShowRec(true)} style={{ background:'var(--bg-dark)', border:'1px solid var(--border-color)', borderRadius:'6px', padding:'4px 8px', color:'var(--primary)', fontSize:'11px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'4px' }}>
