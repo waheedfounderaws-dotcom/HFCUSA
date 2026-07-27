@@ -303,11 +303,14 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
     }
   }, [state.userState?.withdrawalAddress]);
 
+  useEffect(() => {
+    if (tempName !== state.userState?.name || tempPic !== (state.userState?.pic || '')) {
+      onUpdateConfig(tempName, parseInt(speed), isPaused, tempPic);
+    }
+  }, [tempName, tempPic, speed, isPaused]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onUpdateConfig(tempName, parseInt(speed), isPaused, tempPic);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
   };
 
   const handleBindAddress = async () => {
@@ -477,10 +480,6 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
             </span>
           </div>
         </div>
-
-        <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px', justifyContent: 'center' }}>
-          {isSaved ? <><Check size={18} /> Applied!</> : 'Apply'}
-        </button>
       </form>
 
       <div style={{ marginTop: '40px', borderTop: '1px solid var(--border-color)', paddingTop: '20px', maxWidth: '500px' }}>
