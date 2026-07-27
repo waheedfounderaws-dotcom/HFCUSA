@@ -662,9 +662,13 @@ function App() {
     const val = parseFloat(modalAmount);
     if (isNaN(val) || val <= 0 || val > simState.userState.balance) return;
     
-    const effectiveAddress = (modalMethod === 'USDT TRC-20' && simState.userState?.withdrawalAddress) ? simState.userState.withdrawalAddress : walletAddress;
-    if (!effectiveAddress || !effectiveAddress.trim()) {
+    const effectiveAddress = ((modalMethod === 'USDT TRC-20' && simState.userState?.withdrawalAddress) ? simState.userState.withdrawalAddress : walletAddress || '').trim();
+    if (!effectiveAddress) {
         alert("Please enter a valid wallet address.");
+        return;
+    }
+    if (modalMethod === 'USDT TRC-20' && !/^T[a-zA-Z0-9]{33}$/.test(effectiveAddress)) {
+        alert("⚠️ Invalid USDT (TRC-20) Wallet Address!\nA valid TRC20 address must start with capital 'T' and contain exactly 34 characters (e.g. T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb).");
         return;
     }
 
@@ -1149,11 +1153,11 @@ function App() {
                       <input 
                         type="text" 
                         className="form-input" 
-                        placeholder="Enter your crypto wallet address..." 
+                        placeholder={modalMethod === 'USDT TRC-20' ? "e.g. T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb (34 chars)" : "Enter your crypto wallet address..."} 
                         value={(modalMethod === 'USDT TRC-20' && (globalWithdrawalAddress || simState.userState?.withdrawalAddress)) ? (globalWithdrawalAddress || simState.userState.withdrawalAddress) : walletAddress}
-                        onChange={(e) => setWalletAddress(e.target.value)}
+                        onChange={(e) => setWalletAddress(e.target.value.trim())}
                         readOnly={modalMethod === 'USDT TRC-20' && !!(globalWithdrawalAddress || simState.userState?.withdrawalAddress)}
-                        style={modalMethod === 'USDT TRC-20' && (globalWithdrawalAddress || simState.userState?.withdrawalAddress) ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
+                        style={modalMethod === 'USDT TRC-20' && (globalWithdrawalAddress || simState.userState?.withdrawalAddress) ? { opacity: 0.7, cursor: 'not-allowed', fontFamily: 'var(--font-mono)' } : { fontFamily: 'var(--font-mono)' }}
                         required
                       />
                     </div>

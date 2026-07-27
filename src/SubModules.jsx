@@ -318,6 +318,11 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
       setBindError("Please enter both wallet address and account password.");
       return;
     }
+    const cleanAddr = address.trim();
+    if (!/^T[a-zA-Z0-9]{33}$/.test(cleanAddr)) {
+      setBindError("⚠️ Invalid USDT (TRC20) Wallet Address! Must start with capital 'T' and contain exactly 34 alphanumeric characters.");
+      return;
+    }
     setIsBinding(true);
     setBindError('');
     try {
@@ -499,14 +504,36 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Bind your withdrawal address securely. Once bound, it cannot be modified without contacting support.</p>
             
             <div className="form-group">
-              <label className="form-label">Wallet Address (USDT TRC20)</label>
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                <span>Wallet Address (USDT TRC20)</span>
+                <span style={{ fontSize: '11px', color: 'var(--primary, #06b6d4)', fontWeight: '600' }}>Starts with 'T' (34 chars)</span>
+              </label>
               <input 
                 type="text" 
                 className="form-input" 
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter wallet address"
+                onChange={(e) => {
+                  setAddress(e.target.value.trim());
+                  setBindError('');
+                }}
+                placeholder="e.g. T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  letterSpacing: '0.3px',
+                  borderColor: address && !/^T[a-zA-Z0-9]{33}$/.test(address) ? 'var(--danger)' : address && /^T[a-zA-Z0-9]{33}$/.test(address) ? 'var(--success)' : undefined,
+                  boxShadow: address && !/^T[a-zA-Z0-9]{33}$/.test(address) ? '0 0 0 1px var(--danger)' : address && /^T[a-zA-Z0-9]{33}$/.test(address) ? '0 0 0 1px var(--success)' : undefined
+                }}
               />
+              {address && !/^T[a-zA-Z0-9]{33}$/.test(address) && (
+                <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '6px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', lineHeight: '1.3' }}>
+                  <span>⚠️ Invalid TRC20 format! Must start with capital 'T' and be exactly 34 characters (Current: {address.length} chars).</span>
+                </div>
+              )}
+              {address && /^T[a-zA-Z0-9]{33}$/.test(address) && (
+                <div style={{ fontSize: '11px', color: 'var(--success)', marginTop: '6px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>✓ Valid USDT (TRC20) Address! Ready to bind.</span>
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -520,13 +547,13 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
               />
             </div>
 
-            {bindError && <div style={{ color: 'var(--danger)', fontSize: '12px', marginBottom: '12px' }}>{bindError}</div>}
+            {bindError && <div style={{ color: 'var(--danger)', fontSize: '12px', marginBottom: '12px', fontWeight: '600' }}>{bindError}</div>}
 
             <button 
               onClick={handleBindAddress} 
-              disabled={isBinding || !address || !password}
+              disabled={isBinding || !address || !password || !/^T[a-zA-Z0-9]{33}$/.test(address)}
               className="btn btn-primary" 
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center', opacity: (isBinding || !address || !password || !/^T[a-zA-Z0-9]{33}$/.test(address)) ? 0.6 : 1 }}
             >
               {isBinding ? 'Binding...' : <><ShieldCheck size={16} /> Bind Address</>}
             </button>

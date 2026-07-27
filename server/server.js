@@ -266,6 +266,11 @@ app.post('/api/user/bind-address', async (req, res) => {
             return res.status(400).json({ success: false, message: "Missing required fields" });
         }
 
+        const cleanAddr = address.trim();
+        if (!/^T[a-zA-Z0-9]{33}$/.test(cleanAddr)) {
+            return res.status(400).json({ success: false, message: "Invalid TRC-20 wallet address. Must start with capital 'T' and contain exactly 34 characters." });
+        }
+
         const user = await User.findOne({ userId: userId.toString() });
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
