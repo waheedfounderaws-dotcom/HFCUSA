@@ -365,7 +365,6 @@ export default function CandlestickChart({
   const hlRef        = useRef(null);
   const containerRef = useRef(null);
   const chartStateRef = useRef({});
-  chartStateRef.current = { zoomX, panX, priceRange, drawCrosshair, clearCrosshair, setZoomX, setPanX, setPriceRange };
 
   // ── Derived ──
   const tfSeconds = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
@@ -1044,6 +1043,9 @@ export default function CandlestickChart({
     ctx.clearRect(0, 0, hl.width, hl.height);
     setOhlcTip(null);
   }, []);
+
+  // Securely bind latest state & functions after initialization to avoid Temporal Dead Zone ReferenceErrors
+  chartStateRef.current = { zoomX, panX, priceRange, drawCrosshair, clearCrosshair, setZoomX, setPanX, setPriceRange };
 
   /* ───────────────────────────────────────────
      Interactions (Pan & Zoom)
