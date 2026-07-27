@@ -510,6 +510,13 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
               </label>
               <input 
                 type="text" 
+                name="usdt_trc20_binding_address_no_autofill"
+                id="usdt_trc20_binding_address_field"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
+                data-form-type="other"
                 className="form-input" 
                 value={address}
                 onChange={(e) => {

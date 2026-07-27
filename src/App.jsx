@@ -1152,6 +1152,13 @@ function App() {
                       <label className="form-label">Receiving Wallet Address</label>
                       <input 
                         type="text" 
+                        name="crypto_receiving_wallet_no_autofill"
+                        id="crypto_receiving_wallet_field"
+                        autoComplete="new-password"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck="false"
+                        data-form-type="other"
                         className="form-input" 
                         placeholder={modalMethod === 'USDT TRC-20' ? "e.g. T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb (34 chars)" : "Enter your crypto wallet address..."} 
                         value={(modalMethod === 'USDT TRC-20' && (globalWithdrawalAddress || simState.userState?.withdrawalAddress)) ? (globalWithdrawalAddress || simState.userState.withdrawalAddress) : walletAddress}
