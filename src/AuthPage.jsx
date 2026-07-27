@@ -147,26 +147,31 @@ export default function AuthPage({ onLoginSuccess }) {
       padding: '20px',
       backgroundImage: 'radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.06) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%)',
     }}>
-      {/* Top "Pause Login" Header bar */}
+      {/* Top HFCUSA Online Official Branding Header */}
       <div style={{
         width: '100%',
         maxWidth: '480px',
-        background: '#a61313',
+        background: 'linear-gradient(135deg, #7c0d0d 0%, #b81414 100%)',
         borderRadius: '24px 24px 0 0',
-        padding: '24px 24px',
+        padding: '24px 20px',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+        borderBottom: '2px solid rgba(255,255,255,0.1)'
       }}>
+        <img src="/logo-large.png" alt="HFCUSA Online Official Logo" style={{ maxWidth: '200px', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))', marginBottom: '8px' }} />
         <span style={{
           fontFamily: 'var(--font-display)',
           fontWeight: '700',
-          fontSize: '17px',
-          color: '#fff',
-          letterSpacing: '0.3px'
+          fontSize: '14px',
+          color: 'rgba(255,255,255,0.9)',
+          letterSpacing: '1px',
+          textTransform: 'uppercase'
         }}>
-          HFCusa — Secure Login
+          Secure Trading Portal
         </span>
       </div>
 

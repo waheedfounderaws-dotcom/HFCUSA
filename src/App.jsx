@@ -862,9 +862,9 @@ function App() {
 
       {/* Side Navigation Menu (Desktop) */}
       <aside className="sidebar">
-        <div className="brand">
-          <Coins className="brand-logo" size={28} />
-          <span className="brand-name">HFCusa <span style={{fontSize: '10px', color: 'red'}}>[{simState.userState?.id}:{simState.userState?.role}]</span></span>
+        <div className="brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px 20px', gap: '4px' }}>
+          <img src="/logo-large.png" alt="HFCUSA Online Logo" style={{ width: '135px', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.35))', marginBottom: '4px' }} />
+          <span style={{fontSize: '11px', color: 'var(--danger)', fontWeight: '700', letterSpacing: '0.5px'}}>[{simState.userState?.id}:{simState.userState?.role || 'user'}]</span>
         </div>
 
         <ul className="nav-menu">
