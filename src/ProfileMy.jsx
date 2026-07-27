@@ -415,7 +415,7 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
       {/* ── NOTIFICATIONS MODAL OVERLAY ── */}
       {showNotifications && (
         <div className="modal-overlay" style={{ zIndex: 1000, padding: '12px' }}>
-          <div className="modal-content" style={{ maxWidth: '460px', width: '96%', maxHeight: '86vh', display: 'flex', flexDirection: 'column', padding: '20px 16px', borderRadius: '24px', background: 'var(--bg-card, #0f172a)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 25px 60px rgba(0, 0, 0, 0.75)' }}>
+          <div className="modal-content" style={{ maxWidth: '460px', width: '96%', maxHeight: '88dvh', display: 'flex', flexDirection: 'column', padding: '20px 16px', borderRadius: '24px', background: 'var(--bg-card, #0f172a)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 25px 60px rgba(0, 0, 0, 0.75)', overflow: 'hidden' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -460,8 +460,8 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
               </div>
             )}
 
-            {/* Notifications List - Full-width Mobile UX Architecture */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '54vh', paddingRight: '2px', paddingBottom: '4px' }}>
+            {/* Notifications List - Full-width Mobile UX Architecture with Touch Scroll Support */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '56dvh', minHeight: '0', flex: '1 1 auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain', paddingRight: '2px', paddingBottom: '6px' }}>
               {notificationsList.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '38px 16px', color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: '46px', marginBottom: '12px' }}>📭</div>

@@ -569,6 +569,9 @@ body {
   animation:      modalSlideUp 0.28s cubic-bezier(0.4,0,0.2,1);
   max-height:     90dvh;
   overflow-y:     auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action:   pan-y;
+  overscroll-behavior: contain;
 }
 
 @media (min-width: 640px) {
