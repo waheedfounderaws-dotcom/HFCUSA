@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bell, Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp,
   Users, Banknote, Settings, CircleDollarSign,
@@ -61,59 +61,120 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
   const [showPhone, setShowPhone] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
 
+  // Dynamic client-specific notifications generator
+  const generateRealtimeClientFeed = (currentUser) => {
+    const clientId = currentUser?.id || '950936';
+    const clientName = currentUser?.name || 'Waheed Akram';
+    const txList = currentUser?.transactions || [];
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + new Date().toLocaleDateString() + ')';
+
+    const newFeed = [];
+
+    // 1. Real client transactions (Deposit / Withdraw / Top Up / Admin Approvals)
+    txList.slice(0, 5).forEach((tx, idx) => {
+      const typeUpper = (tx.type || '').toUpperCase();
+      const isDep = typeUpper.includes('DEP') || typeUpper === 'TOPUP';
+      const isWth = typeUpper.includes('WITH');
+      newFeed.push({
+        id: `tx_${tx.id || idx}_${Date.now()}`,
+        title: isDep ? `📥 Deposit Request (${tx.status || 'Approved'})` : isWth ? `📤 Withdrawal Request (${tx.status || 'Approved'})` : `⚡ Trade Activity (${tx.status || 'Processed'})`,
+        message: `Client ID: ${clientId} (${clientName}) - Request for $${tx.amount || '0.00'} USDT via ${tx.method || 'Transfer'} registered and submitted to admin approval queue.`,
+        time: tx.date || tx.timestamp || 'Recent',
+        unread: idx === 0,
+        icon: isDep ? '💳' : isWth ? '🏦' : '⚡',
+        borderColor: isDep ? 'rgba(16, 185, 129, 0.4)' : isWth ? 'rgba(239, 68, 68, 0.4)' : 'rgba(6, 182, 212, 0.4)'
+      });
+    });
+
+    // 2. Real-Time Client Login Timestamp
+    newFeed.push({
+      id: `login_${clientId}_${Date.now()}`,
+      title: `🔐 Client Login Verification (ID: ${clientId})`,
+      message: `Account ID: ${clientId} (${clientName}) successfully logged into HFCUSA Online trading portal on ${nowStr}. Session IP & encryption verified.`,
+      time: `Active Now`,
+      unread: newFeed.length === 0,
+      icon: `🛡️`,
+      borderColor: `rgba(6, 182, 212, 0.4)`
+    });
+
+    // 3. Client Logout & Auto-Timeout Protection
+    newFeed.push({
+      id: `logout_${clientId}`,
+      title: `⏱️ Logout Time & Session Monitoring`,
+      message: `Client ID: ${clientId} active login session is monitored in real-time. Auto-logout protocol is scheduled on idle session timeout or manual exit to secure trading balance.`,
+      time: `System Protocol`,
+      unread: false,
+      icon: `🔒`,
+      borderColor: `rgba(245, 158, 11, 0.3)`
+    });
+
+    // 4. Deposit & Withdrawal Approval Policy
+    newFeed.push({
+      id: `policy_${clientId}`,
+      title: `✅ Deposit & Withdrawal Admin Approvals`,
+      message: `All financial deposits and withdrawal payout requests submitted by ID: ${clientId} are automatically routed to our priority verification queue for express approval.`,
+      time: `Active Policy`,
+      unread: false,
+      icon: `👑`,
+      borderColor: `rgba(168, 85, 247, 0.3)`
+    });
+
+    return newFeed;
+  };
+
+  const cacheKey = `hfc_client_notifs_v3_${userState.id || '950936'}`;
+
   // Active Notifications Center State
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notificationsList, setNotificationsList] = useState([
-    {
-      id: 1,
-      title: "Welcome to HFCUSA Online!",
-      message: "Your trading account is verified and active for secure high-yield market operations.",
-      time: "Just now",
-      unread: true,
-      icon: "🎉",
-      borderColor: "rgba(16, 185, 129, 0.4)"
-    },
-    {
-      id: 2,
-      title: "Affiliate Network Yield Accrued",
-      message: "Your active partner agents generated transaction volume yields directly into your wallet balance today.",
-      time: "2 hours ago",
-      unread: true,
-      icon: "💰",
-      borderColor: "rgba(6, 182, 212, 0.4)"
-    },
-    {
-      id: 3,
-      title: "Multi-Layer Security Shield",
-      message: "Anti-autofill rules and automatic wallet encryption enabled on your crypto bindings.",
-      time: "5 hours ago",
-      unread: false,
-      icon: "🛡️",
-      borderColor: "rgba(245, 158, 11, 0.3)"
-    },
-    {
-      id: 4,
-      title: "VIP Status Upgrade Eligible",
-      message: "Maintain total account balance above $100 USDT to activate Pro Member trading privileges and advanced indicators.",
-      time: "1 day ago",
-      unread: false,
-      icon: "👑",
-      borderColor: "rgba(168, 85, 247, 0.3)"
+  const [notificationsList, setNotificationsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`hfc_client_notifs_v3_${userState?.id || '950936'}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return generateRealtimeClientFeed(userState);
+  });
+
+  // Re-sync when new transactions are made by this user ID
+  useEffect(() => {
+    const prevCountKey = `hfc_tx_count_${userState.id || '950936'}`;
+    const txLen = (userState.transactions || []).length;
+    const prevCount = parseInt(localStorage.getItem(prevCountKey) || '-1', 10);
+    
+    // When transactions increase, append new event to client feed
+    if (txLen > prevCount && prevCount !== -1) {
+      const updatedFeed = generateRealtimeClientFeed(userState);
+      setNotificationsList(updatedFeed);
+      try { localStorage.setItem(cacheKey, JSON.stringify(updatedFeed)); } catch(e){}
     }
-  ]);
+    try { localStorage.setItem(prevCountKey, txLen.toString()); } catch(e){}
+  }, [userState.id, userState.name, userState.transactions]);
 
   const unreadCount = notificationsList.filter(n => n.unread).length;
 
   const handleMarkAllRead = () => {
-    setNotificationsList(prev => prev.map(n => ({ ...n, unread: false })));
+    const updated = notificationsList.map(n => ({ ...n, unread: false }));
+    setNotificationsList(updated);
+    try { localStorage.setItem(cacheKey, JSON.stringify(updated)); } catch(e){}
   };
 
   const handleClearAll = () => {
     setNotificationsList([]);
+    try { localStorage.setItem(cacheKey, JSON.stringify([])); } catch(e){}
   };
 
   const handleNotificationClick = (id) => {
-    setNotificationsList(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+    const updated = notificationsList.map(n => n.id === id ? { ...n, unread: false } : n);
+    setNotificationsList(updated);
+    try { localStorage.setItem(cacheKey, JSON.stringify(updated)); } catch(e){}
+  };
+
+  const handleReloadClientLog = () => {
+    const fresh = generateRealtimeClientFeed(userState);
+    setNotificationsList(fresh);
+    try { localStorage.setItem(cacheKey, JSON.stringify(fresh)); } catch(e){}
   };
 
   return (
@@ -398,10 +459,16 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
             {/* Notifications List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '52vh', paddingRight: '4px' }}>
               {notificationsList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-muted)' }}>
+                <div style={{ textAlign: 'center', padding: '38px 16px', color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: '46px', marginBottom: '12px' }}>📭</div>
-                  <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: 'var(--text-bright)' }}>No new notifications</h4>
-                  <p style={{ margin: 0, fontSize: '13px' }}>We will alert you here when there are new trading activity or account events.</p>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: 'var(--text-bright)' }}>No active notifications in view</h4>
+                  <p style={{ margin: '0 0 20px 0', fontSize: '13px', lineHeight: '1.5' }}>You have cleared your current notification log for Client ID: <strong style={{ color: 'var(--text-bright)' }}>{userState.id || 'Active'}</strong>.</p>
+                  <button 
+                    onClick={handleReloadClientLog}
+                    style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid var(--primary, #06b6d4)', color: 'var(--primary, #06b6d4)', padding: '10px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(6, 182, 212, 0.15)' }}
+                  >
+                    🔄 Reload Client ID Activity Log
+                  </button>
                 </div>
               ) : (
                 notificationsList.map((item) => (
