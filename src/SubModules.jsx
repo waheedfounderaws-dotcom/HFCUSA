@@ -375,21 +375,24 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span>Profile Image Avatar (Minimalist Series)</span>
-            <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '600' }}>✨ Live Animated Icons</span>
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+            <span>VIP Profile Avatars (Executive & Crypto Series)</span>
+            <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>✨ Live Animated VIP Icons</span>
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: '16px', padding: '8px 4px' }}>
             {[
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Sophia&backgroundColor=2563eb&radius=50', label: 'Sophia (Bob & Glasses)', delay: '0s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Oliver&backgroundColor=1d4ed8&radius=50', label: 'Oliver (Hoodie & Glasses)', delay: '0.4s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Maya&backgroundColor=2563eb&radius=50', label: 'Maya (Voluminous Curls)', delay: '0.8s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Liam&backgroundColor=1e40af&radius=50', label: 'Liam (Beard & Suit)', delay: '1.2s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Emma&backgroundColor=2563eb&radius=50', label: 'Emma (Executive Bun)', delay: '0.2s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Lucas&backgroundColor=1d4ed8&radius=50', label: 'Noah (Modern Crewneck)', delay: '0.6s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Aria&backgroundColor=2563eb&radius=50', label: 'Aria (Top Bun Style)', delay: '1.0s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Benjamin&backgroundColor=1e40af&radius=50', label: 'Benjamin (Casual Beard)', delay: '1.4s' },
-              { id: 'https://api.dicebear.com/7.x/notionists/svg?seed=Elena&backgroundColor=2563eb&radius=50', label: 'Elena (Flowing Hair)', delay: '0.5s' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Executive&backgroundColor=2563eb&radius=50', label: 'VIP Executive', delay: '0s' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Alexander&backgroundColor=1d4ed8&radius=50', label: 'Business Pro', delay: '0.3s' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Luna&backgroundColor=1e40af&radius=50', label: 'Elegant Curls', delay: '0.6s' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Sophia&backgroundColor=2563eb&radius=50', label: 'Corporate Leader', delay: '0.9s' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Liam&backgroundColor=1d4ed8&radius=50', label: 'Modern Trader', delay: '0.2s' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Victoria&backgroundColor=1e40af&radius=50', label: 'Luxury Style', delay: '0.5s' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Felix&backgroundColor=2563eb&radius=50', label: 'Crypto Minimalist 1', delay: '0.8s' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Aneka&backgroundColor=1d4ed8&radius=50', label: 'Crypto Minimalist 2', delay: '1.1s' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Noah&backgroundColor=1e40af&radius=50', label: 'Crypto Minimalist 3', delay: '0.4s' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Emma&backgroundColor=2563eb&radius=50', label: 'Crypto Minimalist 4', delay: '0.7s' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Benjamin&backgroundColor=1d4ed8&radius=50', label: 'Crypto Minimalist 5', delay: '1.0s' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Aria&backgroundColor=1e40af&radius=50', label: 'Crypto Minimalist 6', delay: '1.3s' },
               { id: '', label: 'Initials (No Avatar)', delay: '0s' }
             ].map((avatar, idx) => (
               <div 
