@@ -276,7 +276,7 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
           <IconGridItem icon={<List size={22}/>}       label="History"      color="var(--primary)"  onClick={() => onFuncClick('RECHARGE_RECORD')} />
 
           <IconGridItem icon={<ShieldAlert size={22}/>}label="Official"     color="var(--primary)"  onClick={() => onFuncClick('OFFICIAL')} />
-          <IconGridItem icon={<Headphones size={22}/> }label="Service"      color="var(--warning)"  onClick={() => onFuncClick('SERVICE')} />
+          <IconGridItem icon={<Headphones size={22}/> }label="Live Chat"    color="var(--warning)"  onClick={() => onFuncClick('SERVICE')} />
           
           <IconGridItem icon={<Settings size={22}/>}   label="Settings"     color="#a855f7"         onClick={() => onFuncClick('SETTING')} />
           <IconGridItem icon={<LogOut size={22}/>}     label="Log Out"      color="var(--danger)"   onClick={() => onFuncClick('LOGOUT')} />
