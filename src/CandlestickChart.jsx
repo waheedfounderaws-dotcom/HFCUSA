@@ -1056,9 +1056,20 @@ export default function CandlestickChart({
   const handlePointerDown = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (e.pointerId && e.currentTarget.setPointerCapture) {
+    if (e.pointerId && e.currentTarget && e.currentTarget.setPointerCapture) {
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
     }
+    
+    // Track multi-touch pointers to cleanly separate 1-finger drag from 2-finger pinch
+    if (!interactRef.current.activePointers) interactRef.current.activePointers = new Map();
+    interactRef.current.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (interactRef.current.activePointers.size >= 2) {
+      interactRef.current.isDragging = false;
+      interactRef.current.isPinching = true;
+      clearCrosshair();
+      return;
+    }
+
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
@@ -1075,6 +1086,7 @@ export default function CandlestickChart({
       interactRef.current.lastTapTime = 0;
       return;
     }
+    const prevMap = interactRef.current.activePointers;
     interactRef.current.lastTapTime = now;
 
     let dragZone = 'MAIN';
@@ -1087,6 +1099,7 @@ export default function CandlestickChart({
 
     interactRef.current = {
        isDragging: true,
+       isPinching: false,
        dragZone,
        startX: e.clientX,
        startY: e.clientY,
@@ -1096,6 +1109,7 @@ export default function CandlestickChart({
        lastTapTime: now,
        pointerId: e.pointerId,
        hasMoved: false,
+       activePointers: prevMap,
     };
     drawCrosshair(e);
   };
@@ -1103,9 +1117,18 @@ export default function CandlestickChart({
   const handlePointerMove = (e) => {
     const inter = interactRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !inter) return;
 
-    if (inter && inter.isDragging) {
+    if (inter.activePointers && inter.activePointers.has(e.pointerId)) {
+      inter.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    // Ignore single-finger drag handler when 2 or more fingers are actively pinching!
+    if (inter.isPinching || (inter.activePointers && inter.activePointers.size >= 2)) {
+      return;
+    }
+
+    if (inter.isDragging) {
       const dx = e.clientX - inter.startX;
       const dy = e.clientY - inter.startY;
       if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
@@ -1152,7 +1175,13 @@ export default function CandlestickChart({
       try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
     }
     if (interactRef.current) {
-      if (interactRef.current.hasMoved && e && e.pointerType === 'touch') {
+      if (interactRef.current.activePointers && e && e.pointerId) {
+        interactRef.current.activePointers.delete(e.pointerId);
+        if (interactRef.current.activePointers.size < 2) {
+          interactRef.current.isPinching = false;
+        }
+      }
+      if (interactRef.current.hasMoved && e && e.pointerType === 'touch' && !interactRef.current.isPinching) {
         setTimeout(() => { clearCrosshair(); }, 2500);
       }
       interactRef.current.isDragging = false;
@@ -1192,15 +1221,16 @@ export default function CandlestickChart({
         const t2 = e.touches[1];
         const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
         if (inter.startPinchDist > 0 && dist > 0) {
-          const scale = inter.startPinchDist / dist;
+          // Direct ratio: spreading fingers outward (dist > startDist) zooms IN (enlarges candles)!
+          const scale = dist / inter.startPinchDist;
           const factor = Math.max(0.1, Math.min(10, inter.startZoomX * scale));
           st.setZoomX(factor);
         }
       }
     };
 
-    const onNativePinchEnd = () => {
-      if (interactRef.current && interactRef.current.isPinching) {
+    const onNativePinchEnd = (e) => {
+      if (interactRef.current && (!e.touches || e.touches.length < 2)) {
         interactRef.current.isPinching = false;
       }
     };
