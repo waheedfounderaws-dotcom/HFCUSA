@@ -123,6 +123,14 @@ function App() {
 
   // Live Sync Client Active Bets & Open Positions to Server for Admin Monitoring
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('referral');
+      if (ref) {
+        localStorage.setItem('aq_invite_ref', ref.trim().toUpperCase());
+      }
+    } catch (e) { console.error(e); }
+
     syncActiveTradesToServer();
     const interval = setInterval(syncActiveTradesToServer, 3000);
     return () => clearInterval(interval);

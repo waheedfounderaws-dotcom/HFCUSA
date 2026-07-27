@@ -1446,16 +1446,50 @@ export function ReferralModule({ state }) {
       <div style={{ background: 'rgba(10, 110, 77, 0.1)', padding: '20px', borderRadius: '12px', border: '1px solid var(--success)', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', textAlign: 'center' }}>
         <Gift size={32} style={{ color: 'var(--success)' }} />
         <h3 style={{ margin: 0, color: 'var(--text-bright)' }}>Invite Friends & Earn</h3>
-        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Share your unique referral code with friends. Once they register, they will appear in your referral team.</p>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Share your unique code or send your direct referral link. Clicking your direct link automatically refers friends directly under you!</p>
         
         {state.userState?.referralCode ? (
-          <div 
-            onClick={() => {
-                navigator.clipboard.writeText(state.userState.referralCode);
-                alert('Referral Code copied to clipboard!');
-            }}
-            style={{ marginTop: '8px', fontSize:'18px', fontWeight:'800', letterSpacing: '2px', color:'var(--success)', background:'rgba(0,0,0,0.3)', padding:'12px 24px', borderRadius:'8px', border:'1px dashed var(--success)', display: 'inline-flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-            {state.userState.referralCode} <Copy size={16} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '480px', marginTop: '12px' }}>
+            {/* Short Referral Code Box */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '12px 18px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Referral Code</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '2px', color: 'var(--success)', marginTop: '2px' }}>{state.userState.referralCode}</div>
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(state.userState.referralCode);
+                  alert('Referral Code copied to clipboard!');
+                }}
+                className="btn"
+                style={{ background: 'var(--success)', color: '#fff', padding: '8px 16px', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              >
+                <Copy size={15} /> Copy Code
+              </button>
+            </div>
+
+            {/* Direct Instant Referral URL Box */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(6, 182, 212, 0.08)', padding: '14px 18px', borderRadius: '10px', border: '1px dashed #06b6d4', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#06b6d4', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <TrendingUp size={16} style={{ color: '#06b6d4' }} /> DIRECT ONE-CLICK INVITE LINK
+                </span>
+                <span style={{ fontSize: '10px', background: '#06b6d4', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>AUTO-REFERRAL</span>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.4)', padding: '10px 14px', borderRadius: '6px', fontFamily: 'monospace', fontSize: '13px', color: 'var(--text-bright)', wordBreak: 'break-all', border: '1px solid rgba(255,255,255,0.08)' }}>
+                {`${window.location.origin}/?ref=${state.userState.referralCode}`}
+              </div>
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}/?ref=${state.userState.referralCode}`;
+                  navigator.clipboard.writeText(link);
+                  alert('Direct Referral Invite Link copied! Anyone opening this link will directly register under your referral ID.');
+                }}
+                style={{ background: '#06b6d4', color: '#fff', padding: '10px', fontSize: '13px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(6, 182, 212, 0.3)', transition: 'all 0.2s' }}
+              >
+                <Copy size={16} /> Copy Direct Invite Link
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '8px' }}>Referral code not available. Try logging out and back in.</div>

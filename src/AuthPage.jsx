@@ -19,7 +19,15 @@ const COUNTRY_CODES = [
 ];
 
 export default function AuthPage({ onLoginSuccess }) {
-  const [activeTab, setActiveTab] = useState('login'); // 'login', 'register', 'whatsapp'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('ref') || params.get('referral') || localStorage.getItem('aq_invite_ref')) {
+        return 'register';
+      }
+    } catch (e) {}
+    return 'login';
+  }); // 'login', 'register', 'whatsapp'
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [phone, setPhone] = useState('');
@@ -28,7 +36,13 @@ export default function AuthPage({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [age, setAge] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+  const [referralCode, setReferralCode] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('referral') || localStorage.getItem('aq_invite_ref') || '';
+      return ref.trim().toUpperCase();
+    } catch (e) { return ''; }
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
@@ -101,6 +115,7 @@ export default function AuthPage({ onLoginSuccess }) {
     .then(data => {
       setLoading(false);
       if (data.success) {
+        localStorage.removeItem('aq_invite_ref');
         onLoginSuccess(data.user);
       } else {
         setError(data.message || 'Registration failed. Please try again.');
@@ -515,6 +530,12 @@ export default function AuthPage({ onLoginSuccess }) {
                 style={{ width: '100%', minWidth: 0, background: '#e8f4fc', border: '1px solid #b6d4e8', borderRadius: '12px', padding: '14px 44px', color: '#333', fontSize: '15px', outline: 'none' }}
               />
             </div>
+
+            {referralCode && (
+              <div style={{ background: '#d1fae5', border: '1px solid #10b981', color: '#065f46', padding: '10px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', marginTop: '-2px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px', textAlign: 'left' }}>
+                <span>🎁 Direct Referral Auto-Attached: Partner <strong>{referralCode}</strong> will be credited for your registration!</span>
+              </div>
+            )}
 
             <button
               id="register-submit-btn"
