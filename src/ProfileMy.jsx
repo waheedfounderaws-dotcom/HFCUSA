@@ -77,8 +77,9 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
       const isWth = typeUpper.includes('WITH');
       newFeed.push({
         id: `tx_${tx.id || idx}_${Date.now()}`,
-        title: isDep ? `📥 Deposit Request (${tx.status || 'Approved'})` : isWth ? `📤 Withdrawal Request (${tx.status || 'Approved'})` : `⚡ Trade Activity (${tx.status || 'Processed'})`,
-        message: `Client ID: ${clientId} (${clientName}) - Request for $${tx.amount || '0.00'} USDT via ${tx.method || 'Transfer'} registered and submitted to admin approval queue.`,
+        category: isDep ? "DEPOSIT REQUEST" : isWth ? "WITHDRAWAL REQUEST" : "TRADE ACTIVITY",
+        title: isDep ? `Deposit Request ($${tx.amount || '0'} USDT)` : isWth ? `Withdrawal Request ($${tx.amount || '0'} USDT)` : `Transaction Record ($${tx.amount || '0'})`,
+        message: `Client ID: ${clientId} (${clientName}) - Request via ${tx.method || 'Transfer'} registered and submitted to admin verification queue. Status: ${tx.status || 'Approved'}.`,
         time: tx.date || tx.timestamp || 'Recent',
         unread: idx === 0,
         icon: isDep ? '💳' : isWth ? '🏦' : '⚡',
@@ -89,8 +90,9 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
     // 2. Real-Time Client Login Timestamp
     newFeed.push({
       id: `login_${clientId}_${Date.now()}`,
-      title: `🔐 Client Login Verification (ID: ${clientId})`,
-      message: `Account ID: ${clientId} (${clientName}) successfully logged into HFCUSA Online trading portal on ${nowStr}. Session IP & encryption verified.`,
+      category: "SECURITY LOGIN",
+      title: `Client Login Verification (ID: ${clientId})`,
+      message: `Account ID: ${clientId} (${clientName}) successfully logged into HFCUSA trading portal on ${nowStr}. IP & encryption verified.`,
       time: `Active Now`,
       unread: newFeed.length === 0,
       icon: `🛡️`,
@@ -100,8 +102,9 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
     // 3. Client Logout & Auto-Timeout Protection
     newFeed.push({
       id: `logout_${clientId}`,
-      title: `⏱️ Logout Time & Session Monitoring`,
-      message: `Client ID: ${clientId} active login session is monitored in real-time. Auto-logout protocol is scheduled on idle session timeout or manual exit to secure trading balance.`,
+      category: "SESSION PROTECTION",
+      title: `Logout Time & Active Monitoring`,
+      message: `Client ID: ${clientId} login session is monitored in real-time. Auto-logout protocol is scheduled on idle session timeout or exit to secure trading balance.`,
       time: `System Protocol`,
       unread: false,
       icon: `🔒`,
@@ -111,7 +114,8 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
     // 4. Deposit & Withdrawal Approval Policy
     newFeed.push({
       id: `policy_${clientId}`,
-      title: `✅ Deposit & Withdrawal Admin Approvals`,
+      category: "APPROVAL STATUS",
+      title: `Automated Admin Approvals`,
       message: `All financial deposits and withdrawal payout requests submitted by ID: ${clientId} are automatically routed to our priority verification queue for express approval.`,
       time: `Active Policy`,
       unread: false,
@@ -410,54 +414,54 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
 
       {/* ── NOTIFICATIONS MODAL OVERLAY ── */}
       {showNotifications && (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
-          <div className="modal-content" style={{ maxWidth: '480px', width: '92%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '24px', borderRadius: '20px', background: 'var(--bg-card, #111827)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)' }}>
+        <div className="modal-overlay" style={{ zIndex: 1000, padding: '12px' }}>
+          <div className="modal-content" style={{ maxWidth: '460px', width: '96%', maxHeight: '86vh', display: 'flex', flexDirection: 'column', padding: '20px 16px', borderRadius: '24px', background: 'var(--bg-card, #0f172a)', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 25px 60px rgba(0, 0, 0, 0.75)' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary, #06b6d4)' }}>
-                  <Bell size={20} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary, #06b6d4)' }}>
+                  <Bell size={22} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-bright, #fff)', fontFamily: 'var(--font-display)' }}>Notifications</h3>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{unreadCount > 0 ? `${unreadCount} unread message${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}</span>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-bright, #fff)', fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>Notifications</h3>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{unreadCount > 0 ? `${unreadCount} new activity update${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}</span>
                 </div>
               </div>
               <button 
                 onClick={() => setShowNotifications(false)} 
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', borderRadius: '50%' }}
+                style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', transition: 'background 0.2s' }}
               >
-                <X size={22} />
+                <X size={20} />
               </button>
             </div>
 
             {/* Actions header bar */}
             {notificationsList.length > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '0 2px' }}>
                 {unreadCount > 0 ? (
                   <button 
                     onClick={handleMarkAllRead}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--primary, #06b6d4)', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: 0 }}
+                    style={{ background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.25)', color: 'var(--primary, #06b6d4)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', transition: 'all 0.2s' }}
                   >
-                    <CheckCircle2 size={16} /> Mark all as read
+                    <CheckCircle2 size={14} /> Mark all as read
                   </button>
                 ) : (
-                  <span style={{ fontSize: '12px', color: 'var(--success, #10b981)', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600' }}>
-                    <CheckCircle2 size={15} /> Everything marked as read
+                  <span style={{ fontSize: '12px', color: 'var(--success, #10b981)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
+                    <CheckCircle2 size={14} /> All read
                   </span>
                 )}
                 <button 
                   onClick={handleClearAll}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: 0 }}
+                  style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger, #ef4444)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '20px', transition: 'all 0.2s' }}
                   title="Clear notification list"
                 >
-                  <Trash2 size={14} /> Clear all
+                  <Trash2 size={13} /> Clear all
                 </button>
               </div>
             )}
 
-            {/* Notifications List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '52vh', paddingRight: '4px' }}>
+            {/* Notifications List - Full-width Mobile UX Architecture */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '54vh', paddingRight: '2px', paddingBottom: '4px' }}>
               {notificationsList.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '38px 16px', color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: '46px', marginBottom: '12px' }}>📭</div>
@@ -477,32 +481,39 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
                     onClick={() => handleNotificationClick(item.id)}
                     style={{ 
                       display: 'flex', 
-                      gap: '14px', 
-                      padding: '16px', 
-                      borderRadius: '14px', 
-                      background: item.unread ? 'rgba(6, 182, 212, 0.08)' : 'rgba(255, 255, 255, 0.02)', 
-                      border: `1px solid ${item.unread ? 'var(--primary, #06b6d4)' : 'rgba(255, 255, 255, 0.08)'}`,
+                      flexDirection: 'column', 
+                      padding: '15px 16px', 
+                      borderRadius: '16px', 
+                      background: item.unread ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(255,255,255,0.03) 100%)' : 'rgba(255, 255, 255, 0.025)', 
+                      border: item.unread ? '1px solid rgba(6, 182, 212, 0.6)' : '1px solid rgba(255, 255, 255, 0.08)',
                       transition: 'all 0.2s ease',
                       cursor: 'pointer',
-                      position: 'relative',
-                      boxShadow: item.unread ? '0 4px 15px rgba(6, 182, 212, 0.1)' : 'none'
+                      boxShadow: item.unread ? '0 6px 20px rgba(6, 182, 212, 0.12)' : '0 2px 8px rgba(0, 0, 0, 0.15)'
                     }}
                   >
-                    <div style={{ fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${item.borderColor}`, flexShrink: 0 }}>
-                      {item.icon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '4px' }}>
-                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: item.unread ? '800' : '600', color: item.unread ? 'var(--text-bright, #fff)' : 'var(--text-main, #e2e8f0)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {item.title}
-                          {item.unread && <span style={{ width: '8px', height: '8px', background: 'var(--primary, #06b6d4)', borderRadius: '50%', display: 'inline-block' }}></span>}
-                        </h4>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{item.time}</span>
+                    {/* Top Tag & Time Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', color: item.unread ? 'var(--primary, #06b6d4)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <span style={{ fontSize: '15px' }}>{item.icon}</span>
+                        <span>{item.category || 'SYSTEM EVENT'}</span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '13px', color: item.unread ? 'var(--text-main, #cbd5e1)' : 'var(--text-muted, #94a3b8)', lineHeight: '1.5' }}>
-                        {item.message}
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '11px', color: item.unread ? 'var(--text-bright, #fff)' : 'var(--text-muted)', fontWeight: item.unread ? '700' : '500' }}>
+                          {item.time}
+                        </span>
+                        {item.unread && (
+                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--primary, #06b6d4)', boxShadow: '0 0 6px var(--primary)' }}></span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Title & Message */}
+                    <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '800', color: 'var(--text-bright, #ffffff)', lineHeight: '1.3', fontFamily: 'var(--font-display)' }}>
+                      {item.title}
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '12.5px', color: item.unread ? 'var(--text-main, #cbd5e1)' : 'var(--text-muted, #94a3b8)', lineHeight: '1.5' }}>
+                      {item.message}
+                    </p>
                   </div>
                 ))
               )}
@@ -511,7 +522,7 @@ export default function ProfileMy({ state, onActionClick, onFuncClick }) {
             <button 
               onClick={() => setShowNotifications(false)}
               className="btn btn-primary"
-              style={{ width: '100%', marginTop: '20px', padding: '12px', borderRadius: '12px', fontWeight: '700' }}
+              style={{ width: '100%', marginTop: '16px', padding: '13px', borderRadius: '14px', fontWeight: '800', fontSize: '15px', boxShadow: '0 6px 20px rgba(6, 182, 212, 0.3)' }}
             >
               Close Notification Center
             </button>
