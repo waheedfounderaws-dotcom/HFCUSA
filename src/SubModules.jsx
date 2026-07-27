@@ -368,10 +368,7 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-            <span>VIP Profile Avatars (Executive & Modern Series)</span>
-            <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '600' }}>✨ Diverse Vibrant Backgrounds</span>
-          </label>
+          <label className="form-label" style={{ marginBottom: '12px', display: 'block' }}>Profile Image Avatar</label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: '16px', padding: '8px 4px' }}>
             {[
               // ── 8 Beautiful Female Executive & Modern Portraits (Distinct Colorful Backgrounds) ──
