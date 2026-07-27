@@ -376,37 +376,42 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
 
         <div className="form-group">
           <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-            <span>VIP Profile Avatars (Executive & Crypto Series)</span>
-            <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>✨ Live Animated VIP Icons</span>
+            <span>VIP Profile Avatars (Executive & Modern Series)</span>
+            <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '600' }}>✨ Diverse Vibrant Backgrounds</span>
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: '16px', padding: '8px 4px' }}>
             {[
-              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Executive&backgroundColor=2563eb&radius=50', label: 'VIP Executive', delay: '0s' },
-              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Alexander&backgroundColor=1d4ed8&radius=50', label: 'Business Pro', delay: '0.3s' },
-              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Luna&backgroundColor=1e40af&radius=50', label: 'Elegant Curls', delay: '0.6s' },
-              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Sophia&backgroundColor=2563eb&radius=50', label: 'Corporate Leader', delay: '0.9s' },
-              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Liam&backgroundColor=1d4ed8&radius=50', label: 'Modern Trader', delay: '0.2s' },
-              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Victoria&backgroundColor=1e40af&radius=50', label: 'Luxury Style', delay: '0.5s' },
-              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Felix&backgroundColor=2563eb&radius=50', label: 'Crypto Minimalist 1', delay: '0.8s' },
-              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Aneka&backgroundColor=1d4ed8&radius=50', label: 'Crypto Minimalist 2', delay: '1.1s' },
-              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Noah&backgroundColor=1e40af&radius=50', label: 'Crypto Minimalist 3', delay: '0.4s' },
-              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Emma&backgroundColor=2563eb&radius=50', label: 'Crypto Minimalist 4', delay: '0.7s' },
-              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Benjamin&backgroundColor=1d4ed8&radius=50', label: 'Crypto Minimalist 5', delay: '1.0s' },
-              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Aria&backgroundColor=1e40af&radius=50', label: 'Crypto Minimalist 6', delay: '1.3s' },
-              { id: '', label: 'Initials (No Avatar)', delay: '0s' }
+              // ── 8 Beautiful Female Executive & Modern Portraits (Distinct Colorful Backgrounds) ──
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Sophia&backgroundColor=059669&radius=50', label: 'Sophia (Emerald Green)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Victoria&backgroundColor=db2777&radius=50', label: 'Victoria (Magenta Pink)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Luna&backgroundColor=4f46e5&radius=50', label: 'Luna (Royal Indigo)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Elena&backgroundColor=dc2626&radius=50', label: 'Elena (Crimson Red)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Aria&backgroundColor=7c3aed&radius=50', label: 'Aria (Deep Purple)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Maya&backgroundColor=0891b2&radius=50', label: 'Maya (Teal Cyan)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Chloe&backgroundColor=d97706&radius=50', label: 'Chloe (Warm Amber)' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Emma&backgroundColor=c026d3&radius=50', label: 'Isabella (Violet Pink)' },
+
+              // ── 6 Sophisticated Male & Neutral Portraits (Distinct Colorful Backgrounds) ──
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Alexander&backgroundColor=2563eb&radius=50', label: 'Alexander (Royal Blue)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Liam&backgroundColor=0d9488&radius=50', label: 'Liam (Forest Jade)' },
+              { id: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Benjamin&backgroundColor=ea580c&radius=50', label: 'Benjamin (Sunset Orange)' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Noah&backgroundColor=334155&radius=50', label: 'Noah (Dark Slate)' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Felix&backgroundColor=1d4ed8&radius=50', label: 'Felix (Sapphire Blue)' },
+              { id: 'https://api.dicebear.com/7.x/micah/svg?seed=Oliver&backgroundColor=8b5cf6&radius=50', label: 'Oliver (Amethyst Violet)' },
+              
+              { id: '', label: 'Initials (No Avatar)' }
             ].map((avatar, idx) => (
               <div 
                 key={idx} 
                 onClick={() => setTempPic(avatar.id)}
-                className={avatar.id ? "avatar-animated" : ""}
+                className="avatar-animated"
                 style={{ 
                   width: '68px', height: '68px', borderRadius: '50%', cursor: 'pointer',
-                  border: tempPic === avatar.id ? '3.5px solid var(--primary, #06b6d4)' : '2px solid rgba(255, 255, 255, 0.12)',
+                  border: tempPic === avatar.id ? '3.5px solid var(--primary, #06b6d4)' : '2px solid rgba(255, 255, 255, 0.15)',
                   background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  animationDelay: avatar.delay,
-                  boxShadow: tempPic === avatar.id ? '0 0 20px rgba(6, 182, 212, 0.7)' : '0 4px 10px rgba(0,0,0,0.25)',
-                  transform: tempPic === avatar.id ? 'scale(1.08)' : undefined
+                  overflow: 'hidden', transition: 'all 0.2s ease',
+                  boxShadow: tempPic === avatar.id ? '0 0 20px rgba(6, 182, 212, 0.7)' : '0 4px 8px rgba(0,0,0,0.2)',
+                  transform: tempPic === avatar.id ? 'scale(1.06)' : undefined
                 }}
                 title={avatar.label}
               >
