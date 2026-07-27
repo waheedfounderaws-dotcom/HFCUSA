@@ -355,13 +355,6 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
 
   return (
     <div>
-      <div className="card-title" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Settings size={22} style={{ color: 'var(--warning)' }} />
-          <span>Simulation Configuration</span>
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} style={{ maxWidth: '500px' }}>
         <div className="form-group">
           <label className="form-label">Profile Nickname</label>
