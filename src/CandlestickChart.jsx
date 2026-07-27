@@ -1110,6 +1110,120 @@ export default function CandlestickChart({
   const handleMouseUp = () => {
     interactRef.current.isDragging = false;
   };
+
+  /* ───────────────────────────────────────────
+     Mobile Touch Interactions (Scroll/Pan, Tap Inspection, Pinch Zoom & Double-Tap Reset)
+  ─────────────────────────────────────────── */
+  const handleTouchStart = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const now = Date.now();
+
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      const mx = t.clientX - rect.left;
+      const my = t.clientY - rect.top;
+      const geo = canvas._geo;
+      if (!geo) return;
+
+      // Detect mobile double tap (within 300ms) to reset zoom/pan
+      if (interactRef.current.lastTapTime && (now - interactRef.current.lastTapTime < 300)) {
+        setPriceRange(null);
+        setZoomX(1);
+        setPanX(0);
+        clearCrosshair();
+        interactRef.current.lastTapTime = 0;
+        return;
+      }
+      interactRef.current.lastTapTime = now;
+
+      let dragZone = 'MAIN';
+      if (mx > geo.chartW) dragZone = 'PRICE';
+      else if (my > geo.chartH) dragZone = 'TIME';
+
+      interactRef.current.isDragging = true;
+      interactRef.current.isTouchPan = false;
+      interactRef.current.dragZone = dragZone;
+      interactRef.current.startX = t.clientX;
+      interactRef.current.startY = t.clientY;
+      interactRef.current.startZoomX = zoomX;
+      interactRef.current.startPanX = panX;
+      interactRef.current.startPriceRange = priceRange || canvas._currentPriceRange;
+
+      // Instantly render crosshair & OHLC tooltip on mobile tap
+      drawCrosshair({ clientX: t.clientX, clientY: t.clientY });
+    } else if (e.touches.length === 2) {
+      // Two-Finger Pinch to Zoom
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      interactRef.current.isPinching = true;
+      interactRef.current.isDragging = false;
+      interactRef.current.startPinchDist = dist || 1;
+      interactRef.current.startZoomX = zoomX;
+      interactRef.current.startPriceRange = priceRange || canvas._currentPriceRange;
+      clearCrosshair();
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    const inter = interactRef.current;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (e.touches.length === 1 && inter.isDragging && !inter.isPinching) {
+      const t = e.touches[0];
+      const dx = t.clientX - inter.startX;
+      const dy = t.clientY - inter.startY;
+
+      // Identify panning threshold versus a static tap
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        inter.isTouchPan = true;
+      }
+
+      if (inter.dragZone === 'TIME') {
+        // Zoom time scale via bottom axis swipe
+        const factor = Math.max(0.1, Math.min(10, 1 + (dx / 150)));
+        setZoomX(inter.startZoomX * factor);
+      } else if (inter.dragZone === 'PRICE') {
+        // Zoom price scale via vertical right axis swipe
+        const factor = Math.max(0.1, Math.min(10, 1 + (dy / 150)));
+        const r = inter.startPriceRange;
+        if (r) {
+          const mid = (r.max + r.min) / 2;
+          const span = (r.max - r.min) * factor;
+          setPriceRange({ max: mid + span/2, min: mid - span/2 });
+        }
+      } else if (inter.dragZone === 'MAIN') {
+        // Responsive horizontal chart scrolling/panning
+        setPanX(inter.startPanX + (dx * 1.35));
+        drawCrosshair({ clientX: t.clientX, clientY: t.clientY });
+      }
+    } else if (e.touches.length === 2 && inter.isPinching) {
+      // Smooth two-finger pinch zoom
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      if (inter.startPinchDist > 0 && dist > 0) {
+        const scale = inter.startPinchDist / dist;
+        const factor = Math.max(0.1, Math.min(10, inter.startZoomX * scale));
+        setZoomX(factor);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const inter = interactRef.current;
+    if (inter && (inter.isTouchPan || inter.isPinching)) {
+      setTimeout(() => { clearCrosshair(); }, 3000);
+    }
+    if (interactRef.current) {
+      interactRef.current.isDragging = false;
+      interactRef.current.isPinching = false;
+      interactRef.current.isTouchPan = false;
+    }
+  };
   
   const handleDoubleClick = (e) => {
     const canvas = canvasRef.current;
@@ -1269,13 +1383,17 @@ export default function CandlestickChart({
           </div>
 
           {/* ══ CANVAS ══ */}
-          <div style={{ flex:'1 1 0', minHeight:0, position:'relative', background:'var(--bg-dark)', cursor:'crosshair' }}
+          <div style={{ flex:'1 1 0', minHeight:0, position:'relative', background:'var(--bg-dark)', cursor:'crosshair', touchAction:'none', userSelect:'none' }}
             onMouseMove={handleInteractiveMouseMove}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={(e) => { handleMouseUp(); clearCrosshair(); }}
             onDoubleClick={handleDoubleClick}
             onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           >
             <canvas ref={canvasRef} style={{ position:'absolute', inset:0, width:'100%', height:'100%', display:'block' }} width={900} height={350}/>
             <canvas ref={hlRef}     style={{ position:'absolute', inset:0, width:'100%', height:'100%', display:'block', pointerEvents:'none' }} width={900} height={350}/>
