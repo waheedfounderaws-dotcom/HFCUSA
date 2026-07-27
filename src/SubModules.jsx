@@ -408,8 +408,8 @@ function SettingModule({ state, onUpdateConfig, theme, onChangeTheme }) {
           </select>
         </div>
 
-        <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {isSaved ? <><Check size={18} /> Settings Applied!</> : 'Apply Configurations'}
+        <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px', justifyContent: 'center' }}>
+          {isSaved ? <><Check size={18} /> Applied!</> : 'Apply'}
         </button>
       </form>
 
