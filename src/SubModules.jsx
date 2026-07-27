@@ -126,7 +126,7 @@ function TeamModule({ state, onSearchTraders, searchState }) {
       </div>
 
       {/* AI Members Table */}
-      <h4 style={{ margin: '0 0 16px 0', color: 'var(--text-bright)' }}>Simulated Agents Pipeline</h4>
+      <h4 style={{ margin: '0 0 16px 0', color: 'var(--text-bright)' }}>Active Agents Pipeline</h4>
       <div className="table-container">
         <table className="trading-table">
           <thead>
@@ -613,7 +613,7 @@ function CommissionModule({ state }) {
           </div>
 
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '140%', background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '8px' }}>
-            ℹ️ Commissions are calculated at **0.1%** of trade size from all trades made by the 150 simulated agents in your affiliate network.
+            ℹ️ Commissions are calculated at **0.1%** of trade size from all trades made by the 150 active partner agents in your affiliate network.
           </div>
         </div>
 
@@ -751,10 +751,6 @@ function OfficialModule() {
 
         <p>
           Users start with "Non-member" privileges. Once total account value (USDT Balance + Stock holdings) exceeds <strong style={{ color: 'var(--text-main)', fontWeight: '700' }}>$100.00 USDT</strong>, the account is upgraded to <strong style={{ color: 'var(--text-main)', fontWeight: '700' }}>Pro Member</strong> status, unlocking additional stats indicators.
-        </p>
-
-        <p>
-          All trades, tokens, cash values, and assets displayed on this platform are strictly simulated. No actual financial deposits, withdrawals, or contracts are supported.
         </p>
       </div>
     </div>

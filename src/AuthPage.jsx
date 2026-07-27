@@ -654,8 +654,9 @@ export default function AuthPage({ onLoginSuccess }) {
 
       {/* Bottom branding */}
       <div style={{ marginTop: '24px', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-          🔒 Secured by HFCusa. All data is simulated.
+        <p style={{ color: 'var(--text-muted)', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: '500' }}>
+          <Lock size={15} style={{ color: '#f59e0b' }} />
+          <span>Secured by HFCUSA Online.</span>
         </p>
       </div>
 
@@ -702,12 +703,6 @@ export default function AuthPage({ onLoginSuccess }) {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px' }}>
-        <Lock size={14} style={{ color: '#f59e0b' }} />
-        Secured by HFCusa. All data is simulated.
-      </div>
 
       {/* Spinner keyframe */}
       <style>{`

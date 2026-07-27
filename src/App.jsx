@@ -1078,7 +1078,7 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Simulated Amount to Deposit</label>
+                    <label className="form-label">Amount to Deposit</label>
                     <input 
                       type="number" 
                       step="any"
@@ -1090,7 +1090,7 @@ function App() {
                     />
                     <div className="form-hint" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Deposits virtual funds instantly</span>
+                        <span>Instant balance verification</span>
                         <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>Fee: $1.00</span>
                       </div>
                       <span>Token: USDT equivalent</span>
@@ -1124,7 +1124,7 @@ function App() {
                   </div>
                   <div className="form-group">
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <label className="form-label">Simulated Amount to Withdraw</label>
+                      <label className="form-label">Amount to Withdraw</label>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Avail: ${simState.userState.balance} USDT</span>
                     </div>
                     <input 
@@ -1139,7 +1139,7 @@ function App() {
                     />
                     <div className="form-hint" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Withdrawals process simulated balances</span>
+                        <span>Secure automated payout routing</span>
                         <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>
                           Fee (1%): ${modalAmount && !isNaN(modalAmount) ? (parseFloat(modalAmount) * 0.01).toFixed(2) : '0.00'} USDT
                         </span>
