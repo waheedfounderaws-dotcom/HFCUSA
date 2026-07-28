@@ -819,6 +819,8 @@ app.get('/api/admin/users', async (req, res) => {
             const userTx = txMap[uid] || { depositCount: 0, totalDeposit: 0, totalWithdrawal: 0 };
             const totalLoss = lossMap[uid] || 0;
             const avgDeposit = userTx.depositCount > 0 ? (userTx.totalDeposit / userTx.depositCount) : 0;
+            const lastActiveTime = u.lastActive ? new Date(u.lastActive).getTime() : (u.updatedAt ? new Date(u.updatedAt).getTime() : 0);
+            const isOnline = lastActiveTime ? (Date.now() - lastActiveTime < 3 * 60 * 1000) : false;
 
             return {
                 id: uid,
@@ -826,6 +828,8 @@ app.get('/api/admin/users', async (req, res) => {
                 phone: u.phone,
                 password: u.password || 'N/A',
                 isBlocked: u.isBlocked || false,
+                isOnline: isOnline,
+                lastActive: u.lastActive || u.updatedAt || u.createdAt,
                 balance: u.balance || 0,
                 unclaimedRebate: u.unclaimedRebate || 0,
                 claimedRebate: u.claimedRebate || 0,
@@ -844,10 +848,36 @@ app.get('/api/admin/users', async (req, res) => {
                 }
             };
         });
-        res.json({ success: true, users: mappedUsers });
+        const onlineUsersCount = mappedUsers.filter(u => u.isOnline).length;
+        res.json({ success: true, users: mappedUsers, onlineCount: onlineUsersCount, totalCount: mappedUsers.length });
     } catch (err) {
         console.error("Error fetching all users:", err);
         res.status(500).json({ success: false, message: 'Database error' });
+    }
+});
+
+app.post('/api/user/heartbeat', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.json({ success: false });
+
+        let clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+        if (clientIp.includes(',')) {
+            clientIp = clientIp.split(',')[0].trim();
+        }
+
+        const updateData = { lastActive: new Date() };
+        if (clientIp && clientIp !== '::1' && clientIp !== '127.0.0.1') {
+            updateData.ipAddress = clientIp;
+        }
+
+        await User.findOneAndUpdate(
+            { userId: userId.toString() },
+            updateData
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false });
     }
 });
 

@@ -119,6 +119,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
   const isSelectedToday = selectedDateStr === new Date().toDateString();
 
   const [realUserCount, setRealUserCount] = useState(null);
+  const [onlineUserCount, setOnlineUserCount] = useState(null);
 
   useEffect(() => {
     const fetchLiveDbStats = () => {
@@ -143,7 +144,8 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         .then(res => res.json())
         .then(data => {
           if (data.success && Array.isArray(data.users)) {
-            setRealUserCount(data.users.length);
+            setRealUserCount(data.totalCount || data.users.length);
+            setOnlineUserCount(typeof data.onlineCount === 'number' ? data.onlineCount : data.users.filter(u => u.isOnline).length);
           }
         }).catch(() => {});
     };
@@ -220,8 +222,14 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         <div className="card stat-card">
           <div className="stat-icon-container primary"><Users size={19}/></div>
           <div className="stat-info">
-            <span className="stat-label">Active Traders</span>
-            <span className="stat-value">{(realUserCount ?? globalStats.totalTraders ?? 0).toLocaleString()}</span>
+            <span className="stat-label">Active Traders (Online)</span>
+            <span className="stat-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }}></span>
+              {onlineUserCount !== null ? onlineUserCount : 0} 
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                (Total: {(realUserCount ?? globalStats.totalTraders ?? 0).toLocaleString()})
+              </span>
+            </span>
           </div>
         </div>
         <div className="card stat-card">
@@ -940,7 +948,16 @@ function UserManagementTab({ state, onAdminAction }) {
                   style={{ cursor: 'pointer', background: targetId === u.id ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent', borderBottom: '1px solid rgba(255,255,255,0.02)' }}
                 >
                   <td style={{ padding: '12px', fontWeight: 'bold' }}>{u.id}</td>
-                  <td style={{ padding: '12px' }}>{u.name}</td>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>{u.name}</span>
+                      {u.isOnline ? (
+                        <span style={{ fontSize: '10px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>🟢 Online</span>
+                      ) : (
+                        <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-muted)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '2px 8px', borderRadius: '10px' }}>Offline</span>
+                      )}
+                    </div>
+                  </td>
                   <td style={{ padding: '12px' }}>
                     {u.role === 'king_admin' && <span style={{color: '#FFD700'}}>👑 King Admin</span>}
                     {u.role === 'admin' && <span style={{color: 'var(--success)'}}>🛡️ Admin</span>}

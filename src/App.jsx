@@ -450,6 +450,13 @@ function App() {
             const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
             const userId = (savedUser && savedUser.id && savedUser.id.toString() !== 'admin') ? savedUser.id.toString() : "525810";
             
+            // Send online heartbeat
+            fetch(`${API_BASE_URL}/api/user/heartbeat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            }).catch(() => {});
+
             // INSTANT PRIORITY: Sync Database Balance FIRST before slow history tables!
             const res = await fetch(`${API_BASE_URL}/api/balance/${userId}`);
             const data = await res.json();
