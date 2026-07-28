@@ -889,7 +889,34 @@ function UserManagementTab({ state, onAdminAction }) {
               </tr>
             </thead>
             <tbody>
-              {realUsers.map(u => (
+              {(() => {
+                const ipCounts = {};
+                const ipColorMap = {};
+                const highlightColors = [
+                  { bg: 'rgba(239, 68, 68, 0.25)', text: '#f87171', border: '1px solid #ef4444', label: '🔴 DUPLICATE' },
+                  { bg: 'rgba(249, 115, 22, 0.25)', text: '#fb923c', border: '1px solid #f97316', label: '🟠 DUPLICATE' },
+                  { bg: 'rgba(168, 85, 247, 0.25)', text: '#c084fc', border: '1px solid #a855f7', label: '🟣 DUPLICATE' },
+                  { bg: 'rgba(234, 179, 8, 0.25)',  text: '#facc15', border: '1px solid #eab308', label: '🟡 DUPLICATE' },
+                  { bg: 'rgba(59, 130, 246, 0.25)', text: '#60a5fa', border: '1px solid #3b82f6', label: '🔵 DUPLICATE' },
+                ];
+                
+                realUsers.forEach(u => {
+                  const ip = u.ipAddress || (u.id === '525810' ? '127.0.0.1' : `39.${(parseInt((u.id+'').slice(0,2)) || 10) % 180 + 20}.${(parseInt((u.id+'').slice(2,4)) || 5) % 200 + 10}.${(parseInt((u.id+'').slice(4,6)) || 3) % 250 + 1}`);
+                  u._computedIp = ip;
+                  ipCounts[ip] = (ipCounts[ip] || 0) + 1;
+                });
+
+                let colorIdx = 0;
+                Object.keys(ipCounts).forEach(ip => {
+                  if (ipCounts[ip] > 1) {
+                    ipColorMap[ip] = highlightColors[colorIdx % highlightColors.length];
+                    colorIdx++;
+                  }
+                });
+
+                return realUsers.map(u => {
+                  const dupStyle = ipColorMap[u._computedIp];
+                  return (
                 <tr 
                   className="all-users-row" 
                   key={'all_'+u.id} 
@@ -953,8 +980,29 @@ function UserManagementTab({ state, onAdminAction }) {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '12px', fontFamily: 'var(--font-mono)', color: '#06b6d4', fontWeight: '600', fontSize: '12px' }}>
-                    {u.ipAddress || (u.id === '525810' ? '127.0.0.1' : `39.${(parseInt((u.id+'').slice(0,2)) || 10) % 180 + 20}.${(parseInt((u.id+'').slice(2,4)) || 5) % 200 + 10}.${(parseInt((u.id+'').slice(4,6)) || 3) % 250 + 1}`)}
+                  <td style={{ padding: '12px', fontFamily: 'var(--font-mono)', fontWeight: '600', fontSize: '12px' }}>
+                    {dupStyle ? (
+                      <span style={{ 
+                        background: dupStyle.bg, 
+                        color: dupStyle.text, 
+                        border: dupStyle.border,
+                        padding: '5px 9px', 
+                        borderRadius: '6px', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px',
+                        boxShadow: '0 0 10px rgba(239, 68, 68, 0.25)'
+                      }} title={`Warning: ${ipCounts[u._computedIp]} accounts registered under this identical IP address!`}>
+                        🚨 {u._computedIp}
+                        <span style={{ fontSize: '10px', background: '#ef4444', color: '#fff', padding: '2px 5px', borderRadius: '4px', fontWeight: '900', letterSpacing: '0.3px' }}>
+                          {ipCounts[u._computedIp]}x ACCOUNTS
+                        </span>
+                      </span>
+                    ) : (
+                      <span style={{ color: '#06b6d4', padding: '4px 6px', background: 'rgba(6, 182, 212, 0.08)', borderRadius: '4px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+                        🌐 {u._computedIp}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                     <button 
@@ -966,7 +1014,9 @@ function UserManagementTab({ state, onAdminAction }) {
                     </button>
                   </td>
                 </tr>
-              ))}
+                  );
+                });
+              })()}
             </tbody>
           </table>
           
