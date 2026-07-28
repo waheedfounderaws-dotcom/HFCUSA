@@ -702,7 +702,7 @@ function App() {
   };
 
   // Withdraw simulated cash -> Now requires Wallet Address
-  const handleWithdrawSubmit = (e) => {
+  const handleWithdrawSubmit = async (e) => {
     e.preventDefault();
     const val = parseFloat(modalAmount);
     if (isNaN(val) || val <= 0 || val > simState.userState.balance) return;
@@ -715,6 +715,28 @@ function App() {
     if (modalMethod === 'USDT TRC-20' && !/^T[a-zA-Z0-9]{33}$/.test(effectiveAddress)) {
         alert("⚠️ Invalid USDT (TRC-20) Wallet Address!\nA valid TRC20 address must start with capital 'T' and contain exactly 34 characters (e.g. T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb).");
         return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: simState.userState.id.toString(),
+          amount: val,
+          walletAddress: effectiveAddress,
+          method: modalMethod
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert("Withdrawal failed: " + data.message);
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error.");
+      return;
     }
 
     const fee = val * 0.01;

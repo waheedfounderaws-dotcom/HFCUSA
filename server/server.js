@@ -617,6 +617,94 @@ app.post('/api/admin/approve_transfer', async (req, res) => {
     }
 });
 
+// --- WITHDRAWAL ROUTES ---
+const WithdrawalRequest = require('./models/WithdrawalRequest');
+
+app.post('/api/withdraw', async (req, res) => {
+    try {
+        const { userId, amount, walletAddress, method } = req.body;
+        
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        const actualAmount = Number(amount);
+        if (user.balance < actualAmount) {
+            return res.status(400).json({ success: false, message: "Insufficient balance" });
+        }
+
+        user.balance -= actualAmount;
+        await user.save();
+
+        const newWithdrawal = await WithdrawalRequest.create({
+            userId,
+            amount: actualAmount,
+            walletAddress,
+            method: method || 'USDT TRC-20',
+            status: 'Pending'
+        });
+
+        const Transaction = require('./models/Transaction');
+        await Transaction.create({
+            userId,
+            id: `WD_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+            date: new Date().toLocaleString(),
+            type: 'Withdrawal',
+            method: method || 'USDT TRC-20',
+            amount: actualAmount,
+            txHash: 'Pending',
+            status: 'Pending'
+        });
+
+        res.json({ success: true, message: "Withdrawal request submitted successfully", withdrawalId: newWithdrawal._id });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server error during withdrawal" });
+    }
+});
+
+app.get('/api/admin/withdrawals', async (req, res) => {
+    try {
+        const requests = await WithdrawalRequest.find({ status: 'Pending' }).sort({ createdAt: -1 });
+        res.json({ success: true, requests });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Error fetching withdrawal requests" });
+    }
+});
+
+app.post('/api/admin/resolve_withdrawal', async (req, res) => {
+    try {
+        const { requestId, approve } = req.body;
+        const request = await WithdrawalRequest.findById(requestId);
+        if (!request) return res.status(404).json({ success: false, message: "Request not found" });
+        if (request.status !== 'Pending') return res.status(400).json({ success: false, message: "Already resolved" });
+
+        request.status = approve ? 'Approved' : 'Rejected';
+        await request.save();
+
+        const Transaction = require('./models/Transaction');
+        const tx = await Transaction.findOne({ userId: request.userId, type: 'Withdrawal', status: 'Pending', amount: request.amount }).sort({ createdAt: -1 });
+        if (tx) {
+            tx.status = approve ? 'Confirmed' : 'Failed';
+            tx.txHash = approve ? 'AdminApproved' : 'Rejected';
+            await tx.save();
+        }
+
+        if (!approve) {
+            const user = await User.findOne({ userId: request.userId });
+            if (user) {
+                user.balance += request.amount;
+                await user.save();
+            }
+        }
+
+        res.json({ success: true, message: `Withdrawal ${approve ? 'Approved' : 'Rejected'}` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Error resolving withdrawal" });
+    }
+});
+
 app.post('/api/admin/assign-role', async (req, res) => {
     try {
         const { targetUserId, newRole, newPermissions, requesterId } = req.body;

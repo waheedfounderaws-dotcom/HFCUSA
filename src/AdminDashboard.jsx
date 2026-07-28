@@ -1638,6 +1638,7 @@ function ChartControlTab({ state, onChartControl }) {
 
 function PendingTransfersTab({ state, onAdminAction }) {
   const [requests, setRequests] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const supportTickets = (state && state.supportTickets) ? state.supportTickets : [];
@@ -1698,9 +1699,25 @@ function PendingTransfersTab({ state, onAdminAction }) {
     setLoading(false);
   };
 
+  const fetchWithdrawals = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/withdrawals`);
+      const data = await res.json();
+      if (data.success) {
+        setWithdrawals(data.requests);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(fetchRequests, 5000);
+    fetchWithdrawals();
+    const interval = setInterval(() => {
+      fetchRequests();
+      fetchWithdrawals();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1724,6 +1741,49 @@ function PendingTransfersTab({ state, onAdminAction }) {
     }
   };
 
+  const handleResolveRealWithdrawal = async (id, approve, amount, address, uid) => {
+    if (approve) {
+        try {
+            alert("Initiating secure Payout via Cryptomus...");
+            const response = await fetch(`${API_BASE_URL}/api/cryptomus/payout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, currency: "USDT", to_address: address || "test_address", userId: uid })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("Withdrawal successfully processed by Cryptomus! Funds have been sent.");
+            } else {
+                alert("Withdrawal failed: " + (data.message || "Unknown error"));
+                return;
+            }
+        } catch (error) {
+            console.error("Payout error:", error);
+            alert("Could not reach payment server. Make sure the backend is running.");
+            return;
+        }
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/resolve_withdrawal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: id, approve })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchWithdrawals();
+      } else {
+        alert(data.message || "Failed to resolve withdrawal.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error.");
+    }
+  };
+
+
+
   try {
     return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1735,7 +1795,50 @@ function PendingTransfersTab({ state, onAdminAction }) {
         </h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {financialTickets.length === 0 && <div style={{ color: 'var(--text-muted)' }}>No pending financial requests.</div>}
+          {financialTickets.length === 0 && withdrawals.length === 0 && <div style={{ color: 'var(--text-muted)' }}>No pending financial requests.</div>}
+          
+          {/* Real Global Withdrawals */}
+          {withdrawals.map(req => (
+            <div key={req._id} style={{ 
+              border: '1px solid var(--border-color)', 
+              padding: '16px', 
+              borderRadius: '12px',
+              background: req.status === 'Closed' ? 'rgba(255,255,255,0.02)' : 'var(--bg-card)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Global User <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 'normal' }}>({req.userId})</span></span>
+                <span style={{ 
+                  fontSize: '11px', 
+                  padding: '4px 8px', 
+                  borderRadius: '4px',
+                  background: req.status === 'Pending' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                  color: req.status === 'Pending' ? '#ef4444' : '#22c55e'
+                }}>
+                  {req.status}
+                </span>
+              </div>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-color)' }}>
+                <strong style={{ color: 'var(--danger)' }}>[WITHDRAW] </strong> 
+                Withdrawal of ${Number(req.amount).toFixed(2)} USDT via {req.method} to Address: {req.walletAddress}
+              </p>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(req.createdAt).toLocaleString()}</span>
+                {req.status === 'Pending' && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleResolveRealWithdrawal(req._id, false, req.amount, req.walletAddress, req.userId)}>
+                      Reject
+                    </button>
+                    <button className="btn btn-success btn-sm" onClick={() => handleResolveRealWithdrawal(req._id, true, req.amount, req.walletAddress, req.userId)}>
+                      Approve
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Local Simulated Tickets */}
           {financialTickets.map(ticket => (
             <div key={ticket.id} style={{ 
               border: '1px solid var(--border-color)', 
