@@ -1724,7 +1724,8 @@ function PendingTransfersTab({ state, onAdminAction }) {
     }
   };
 
-  return (
+  try {
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Financial Approvals Section (Deposits/Withdrawals) */}
@@ -1796,7 +1797,7 @@ function PendingTransfersTab({ state, onAdminAction }) {
         <h3 style={{ margin: '0 0 20px 0', color: 'var(--text-bright)' }}>Pending Rebate Transfers</h3>
       {loading ? (
         <div style={{ color: 'var(--text-muted)' }}>Loading...</div>
-      ) : requests.length === 0 ? (
+      ) : (!requests || requests.length === 0) ? (
         <div style={{ color: 'var(--text-muted)' }}>No pending transfer requests.</div>
       ) : (
         <table className="trading-table">
@@ -1810,11 +1811,11 @@ function PendingTransfersTab({ state, onAdminAction }) {
             </tr>
           </thead>
           <tbody>
-            {requests.map(req => (
+            {(requests || []).map(req => (
               <tr key={req._id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                 <td style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '12px' }}>{req._id}</td>
                 <td style={{ padding: '12px', fontWeight: 'bold' }}>{req.userId}</td>
-                <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 'bold' }}>${req.amount.toFixed(2)}</td>
+                <td style={{ padding: '12px', color: 'var(--success)', fontWeight: 'bold' }}>${Number(req.amount || 0).toFixed(2)}</td>
                 <td style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '12px' }}>{new Date(req.createdAt).toLocaleString()}</td>
                 <td style={{ padding: '12px', textAlign: 'right' }}>
                   <button 
@@ -1834,11 +1835,11 @@ function PendingTransfersTab({ state, onAdminAction }) {
       {/* Wallet Change Approvals Section */}
       <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', marginTop: '20px' }}>
         <h3 style={{ margin: '0 0 20px 0', color: 'var(--text-bright)' }}>Change Wallet Address Approvals</h3>
-        {state.supportTickets.filter(t => t.actionType === 'WALLET_CHANGE').length === 0 ? (
+        {supportTickets.filter(t => t && t.actionType === 'WALLET_CHANGE').length === 0 ? (
           <div style={{ color: 'var(--text-muted)' }}>No pending wallet change requests.</div>
         ) : (
           <div style={{ display: 'grid', gap: '16px' }}>
-            {state.supportTickets.filter(t => t.actionType === 'WALLET_CHANGE').map(ticket => (
+            {supportTickets.filter(t => t && t.actionType === 'WALLET_CHANGE').map(ticket => (
               <div key={ticket.id} style={{ 
                 border: '1px solid var(--border-color)', 
                 padding: '16px', 
@@ -1884,7 +1885,16 @@ function PendingTransfersTab({ state, onAdminAction }) {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (err) {
+    console.error("Crash in PendingTransfersTab:", err);
+    return (
+      <div style={{ padding: '24px', background: 'var(--bg-card)', color: '#ef4444', borderRadius: '12px', border: '1px solid #ef4444' }}>
+        <h3>Error Loading Tab</h3>
+        <p>{err.toString()}</p>
+      </div>
+    );
+  }
 }
 
 function GlobalClientSearch({ state }) {
