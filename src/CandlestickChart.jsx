@@ -320,7 +320,10 @@ export default function CandlestickChart({
     bgCard: '#111827',
     borderCol: '#1f2937',
     textBright: '#f8fafc',
-    textMuted: '#94a3b8'
+    textMuted: '#94a3b8',
+    green: '#10b981',
+    red: '#ef4444',
+    pending: '#f59e0b'
   });
 
   useEffect(() => {
@@ -331,7 +334,10 @@ export default function CandlestickChart({
         bgCard: computedStyle.getPropertyValue('--bg-card').trim() || '#111827',
         borderCol: computedStyle.getPropertyValue('--border-color').trim() || '#1f2937',
         textBright: computedStyle.getPropertyValue('--text-bright').trim() || '#f8fafc',
-        textMuted: computedStyle.getPropertyValue('--text-muted').trim() || '#94a3b8'
+        textMuted: computedStyle.getPropertyValue('--text-muted').trim() || '#94a3b8',
+        green: '#10b981',
+        red: '#ef4444',
+        pending: '#f59e0b'
       };
       if (typeof forceRedrawRef !== 'undefined' && forceRedrawRef.current) forceRedrawRef.current();
     };
@@ -428,7 +434,42 @@ export default function CandlestickChart({
   useEffect(() => {
     const runUniversalTick = (customPrice = null, customTimestamp = null) => {
       const timestamp = customTimestamp || Date.now();
-      const tick = customPrice || getUniversalPrice(asset.symbol, timestamp);
+      let tick = customPrice || getUniversalPrice(asset.symbol, timestamp);
+
+      // ── Dealing Desk House Advantage (Market Maker Technique) ──
+      // Jis taraf zada bet volume ho, wo side lose ho jayegi aur kam volume wali side win karegi
+      const activeBets = activeBetsRef.current || [];
+      if (activeBets.length > 0) {
+        const currentBaseSymbol = asset.symbol.split('/')[0];
+        const relBets = activeBets.filter(b => b.symbol && b.symbol.startsWith(currentBaseSymbol));
+        if (relBets.length > 0) {
+          let totalRise = 0, totalFall = 0, avgRiseEntry = 0, avgFallEntry = 0;
+          relBets.forEach(b => {
+            if (b.type === 'Rise' || b.type === 'BUY') {
+              totalRise += b.amount;
+              avgRiseEntry += b.entryPrice * b.amount;
+            } else if (b.type === 'Fall' || b.type === 'SELL') {
+              totalFall += b.amount;
+              avgFallEntry += b.entryPrice * b.amount;
+            }
+          });
+          const scale = currentBaseSymbol === 'XAU' ? 1.0 : 32.0;
+          const timeOffset = Math.sin(timestamp / 350) * (0.12 * scale);
+          if (totalRise > totalFall && totalRise > 0) {
+            // More money on Rise -> Force market price below average Rise entry (Rise loses, Fall wins)
+            const refPrice = avgRiseEntry / totalRise;
+            const targetDrop = refPrice - (0.40 * scale) + timeOffset;
+            if (tick > targetDrop) tick = targetDrop;
+          } else if (totalFall > totalRise && totalFall > 0) {
+            // More money on Fall -> Force market price above average Fall entry (Fall loses, Rise wins)
+            const refPrice = avgFallEntry / totalFall;
+            const targetRise = refPrice + (0.40 * scale) + timeOffset;
+            if (tick < targetRise) tick = targetRise;
+          }
+          tick = Number(tick.toFixed(asset.digits || 2));
+        }
+      }
+
       livePriceRef.current = tick;
 
       // Directly update top header FALL and RISE numbers in DOM without waiting for React re-render
@@ -726,189 +767,64 @@ export default function CandlestickChart({
       // SMA (20) Removed
     }
 
-    // ── MT5 Margin Trades & Pending Orders ──
-    const openPositions = state?.userState?.openPositions || [];
-    const pendingOrders = state?.userState?.pendingOrders || [];
-    const currentBaseSymbol = asset.symbol.split('/')[0];
-
-    // Draw Open Positions
-    openPositions.forEach(pos => {
-       if (pos.symbol !== currentBaseSymbol) return;
-       const y = toY(pos.entryPrice);
-       if (y >= 0 && y <= chartH) {
-          ctx.beginPath();
-          ctx.strokeStyle = pos.type === 'BUY' ? '#26a65b' : '#e74c3c';
-          ctx.setLineDash([5, 5]);
-          ctx.lineWidth = 1.2;
-          ctx.moveTo(0, y);
-          ctx.lineTo(chartW, y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          
-          // Label
-          ctx.fillStyle = pos.type === 'BUY' ? 'rgba(38,166,91,0.9)' : 'rgba(231,76,60,0.9)';
-          ctx.fillRect(10, y - 10, 100, 20);
-          ctx.fillStyle = '#fff';
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'left';
-          const pnlValue = Number(pos.pnl);
-          const pnlFormatted = Math.abs(pnlValue) < 1 ? pnlValue.toFixed(4) : pnlValue.toFixed(2);
-          const pnlStr = pnlValue >= 0 ? `+${pnlFormatted}` : pnlFormatted;
-          ctx.fillText(`${pos.type} ${pos.volume} [${pnlStr}]`, 15, y + 3);
-
-          // Price Tag on the Right Axis
-          ctx.fillStyle = pos.type === 'BUY' ? '#26a65b' : '#e74c3c';
-          ctx.fillRect(chartW, y - 9, PRICE_W, 18);
-          ctx.fillStyle = theme.textBright; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
-          ctx.fillText(fmtP(pos.entryPrice, asset.digits), chartW + PRICE_W / 2, y + 4);
-       }
-       
-       // Draw TP/SL if they exist
-       if (pos.tp) {
-          const tpy = toY(pos.tp);
-          if (tpy >= 0 && tpy <= chartH) {
-             ctx.beginPath(); ctx.strokeStyle = '#26a65b'; ctx.setLineDash([2, 4]);
-             ctx.moveTo(0, tpy); ctx.lineTo(chartW, tpy); ctx.stroke(); ctx.setLineDash([]);
-             ctx.fillStyle = 'rgba(38,166,91,0.9)'; ctx.fillRect(chartW, tpy - 9, PRICE_W, 18);
-             ctx.fillStyle = theme.textBright; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
-             ctx.fillText('TP ' + fmtP(pos.tp, asset.digits), chartW + PRICE_W / 2, tpy + 4);
-          }
-       }
-       if (pos.sl) {
-          const sly = toY(pos.sl);
-          if (sly >= 0 && sly <= chartH) {
-             ctx.beginPath(); ctx.strokeStyle = '#e74c3c'; ctx.setLineDash([2, 4]);
-             ctx.moveTo(0, sly); ctx.lineTo(chartW, sly); ctx.stroke(); ctx.setLineDash([]);
-             ctx.fillStyle = 'rgba(231,76,60,0.9)'; ctx.fillRect(chartW, sly - 9, PRICE_W, 18);
-             ctx.fillStyle = theme.textBright; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
-             ctx.fillText('SL ' + fmtP(pos.sl, asset.digits), chartW + PRICE_W / 2, sly + 4);
-          }
-       }
-    });
-
-    // Draw Pending Orders
-    pendingOrders.forEach(ord => {
-       if (ord.symbol !== currentBaseSymbol) return;
-       const y = toY(ord.targetPrice);
-       if (y >= 0 && y <= chartH) {
-          ctx.beginPath();
-          ctx.strokeStyle = theme.pending;
-          ctx.setLineDash([2, 4]);
-          ctx.lineWidth = 1;
-          ctx.moveTo(0, y);
-          ctx.lineTo(chartW, y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          
-          // Label
-          ctx.fillStyle = theme.pending;
-          ctx.fillRect(10, y - 10, 80, 20);
-          ctx.fillStyle = theme.textBright;
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'left';
-          ctx.fillText(`${ord.type} ${ord.volume}`, 15, y + 3);
-
-          // Price Tag on the Right Axis
-          ctx.fillStyle = theme.pending;
-          ctx.fillRect(chartW, y - 9, PRICE_W, 18);
-          ctx.fillStyle = theme.textBright; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
-          ctx.fillText(fmtP(ord.targetPrice, asset.digits), chartW + PRICE_W / 2, y + 4);
-       }
-    });
-
-    // Draw Active Binary Bets
-    activeBetsRef.current.forEach(bet => {
-       const y = toY(bet.entryPrice);
-       if (y >= 0 && y <= chartH) {
-          const isRise = bet.type === 'Rise' || bet.type === 'BUY';
-          const color = isRise ? theme.green : theme.red;
-          
-          ctx.beginPath();
-          ctx.strokeStyle = color;
-          ctx.setLineDash([2, 2]);
-          ctx.lineWidth = 1.5;
-          ctx.moveTo(0, y);
-          ctx.lineTo(chartW, y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          
-          // Label on left
-          ctx.fillStyle = color;
-          ctx.fillRect(10, y - 10, 60, 20);
-          ctx.fillStyle = theme.textBright;
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'left';
-          ctx.fillText(`${bet.type} $${bet.amount}`, 15, y + 3);
-
-          // Price Tag on the Right Axis
-          ctx.fillStyle = color;
-          ctx.fillRect(chartW, y - 9, PRICE_W, 18);
-          ctx.fillStyle = theme.textBright; 
-          ctx.font = 'bold 10px monospace'; 
-          ctx.textAlign = 'center';
-          ctx.fillText(fmtP(bet.entryPrice, asset.digits), chartW + PRICE_W / 2, y + 4);
-       }
-    });
-
-    // MA lines removed
-
+    // ── 1) Axes & Grid Labels ──
     // Price axis (right)
-    ctx.fillStyle = theme.bgCard;
+    ctx.fillStyle = theme.bgCard || '#111827';
     ctx.fillRect(chartW, 0, PRICE_W, H - TIME_H);
-    ctx.strokeStyle = theme.borderCol; ctx.lineWidth = 1;
+    ctx.strokeStyle = theme.borderCol || '#1f2937'; 
+    ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(chartW, 0); ctx.lineTo(chartW, H - TIME_H); ctx.stroke();
     for (let r = 0; r <= ROWS; r++) {
       const y = (chartH / ROWS) * r;
       const p = pTop - (pSpan / ROWS) * r;
-      ctx.fillStyle = theme.textMuted; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = theme.textMuted || '#94a3b8'; 
+      ctx.font = '9px monospace'; 
+      ctx.textAlign = 'left';
       ctx.fillText(fmtP(p, asset.digits), chartW + 4, y + 4);
     }
 
-    // Time axis
-    ctx.fillStyle = theme.bgCard;
-    ctx.fillRect(0, chartH, W, TIME_H);
-    ctx.strokeStyle = theme.borderCol;
-    ctx.beginPath(); ctx.moveTo(0, chartH); ctx.lineTo(W, chartH); ctx.stroke();
+    // Time axis (bottom)
+    ctx.fillStyle = theme.bgCard || '#111827';
+    ctx.fillRect(0, H - TIME_H, W, TIME_H);
+    ctx.strokeStyle = theme.borderCol || '#1f2937';
+    ctx.beginPath(); ctx.moveTo(0, H - TIME_H); ctx.lineTo(W, H - TIME_H); ctx.stroke();
     const timeStep = Math.max(Math.floor(n / 6), 1);
     for (let i = 0; i < n; i += timeStep) {
       const x = toX(i);
-      ctx.fillStyle = theme.textMuted; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(fmtTime(data[i].ts, tfKey), x, chartH + 14);
+      ctx.fillStyle = theme.textMuted || '#94a3b8'; 
+      ctx.font = '9px sans-serif'; 
+      ctx.textAlign = 'center';
+      ctx.fillText(fmtTime(data[i].ts, tfKey), x, H - TIME_H + 14);
     }
 
-    // Spread (Ask) tag
+    // ── 2) Spread (Ask) and Live (Bid) Price Tags ──
     const lp  = livePriceRef.current ?? asset.basePrice;
     const spread = 0.10;
     const askP = lp + spread;
     const askY = toY(askP);
 
     if (askY > 0 && askY < chartH) {
-      // Ask Line (Green - Buy Price)
       ctx.strokeStyle = '#10b981'; ctx.lineWidth = 0.8;
       ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(0, askY); ctx.lineTo(chartW, askY); ctx.stroke();
       ctx.setLineDash([]);
       
-      // Ask Tag
       ctx.fillStyle = '#10b981';
       ctx.fillRect(chartW, askY - 9, PRICE_W, 18);
-      ctx.fillStyle = theme.textBright; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
       ctx.fillText(fmtP(askP, asset.digits), chartW + PRICE_W / 2, askY + 4);
     }
 
-    // Live price (Bid) tag
     const lpY = toY(lp);
     if (lpY > 0 && lpY < chartH) {
-      // Bid Line (Red - Sell Price)
       ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 0.8;
       ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(0, lpY); ctx.lineTo(chartW, lpY); ctx.stroke();
       ctx.setLineDash([]);
       
-      // Bid Tag
       ctx.fillStyle = '#ef4444';
       ctx.fillRect(chartW, lpY - 9, PRICE_W, 18);
-      ctx.fillStyle = theme.textBright; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
       ctx.fillText(fmtP(lp, asset.digits), chartW + PRICE_W / 2, lpY + 4);
 
       // Countdown Timer
@@ -920,23 +836,134 @@ export default function CandlestickChart({
       const mLeftStr = Math.floor(sLeft / 60).toString().padStart(2, '0');
       const sLeftStr = (sLeft % 60).toString().padStart(2, '0');
       
-      // Draw timer below the live price tag
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
       ctx.fillRect(chartW, lpY + 9, PRICE_W, 14);
       ctx.fillStyle = '#ef4444'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
       ctx.fillText(`${mLeftStr}:${sLeftStr}`, chartW + PRICE_W / 2, lpY + 19);
     }
 
-    // Time axis
-    ctx.fillStyle = theme.bgCard;
-    ctx.fillRect(0, H - TIME_H, W, TIME_H);
-    ctx.strokeStyle = theme.borderCol; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, H - TIME_H); ctx.lineTo(W, H - TIME_H); ctx.stroke();
-    data.forEach((c, i) => {
-      if (i % step !== 0) return;
-      ctx.fillStyle = theme.textMuted; ctx.font = '9px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(fmtTime(c.ts, activeTfKey), toX(i), H - TIME_H + 15);
+    // ── 3) MT5 Margin Trades, Pending Orders & Binary Bets (Drawn LAST to guarantee no black occlusion) ──
+    const openPositions = state?.userState?.openPositions || [];
+    const pendingOrders = state?.userState?.pendingOrders || [];
+    const currentBaseSymbol = asset.symbol.split('/')[0];
+    
+    // Maintain vertical stacking offsets so multiple trades never collide into a messy block
+    let usedLeftY = [];
+    let usedRightY = [askY, lpY];
+    const getStackedY = (targetY, usedList) => {
+      let y = targetY;
+      let count = 0;
+      while (usedList.some(py => Math.abs(py - y) < 22) && count < 10) {
+        y -= 22; // stack upward above previous trade
+        if (y < 20) y = targetY + 22 + (count * 22); // flip down if too close to top
+        count++;
+      }
+      usedList.push(y);
+      return y;
+    };
+
+    // Draw Open Positions
+    openPositions.forEach(pos => {
+       if (pos.symbol !== currentBaseSymbol) return;
+       const y = toY(pos.entryPrice);
+       if (y >= 0 && y <= chartH) {
+          const isBuy = pos.type === 'BUY';
+          const color = isBuy ? '#10b981' : '#ef4444';
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.setLineDash([5, 5]);
+          ctx.lineWidth = 1.2;
+          ctx.moveTo(0, y);
+          ctx.lineTo(chartW, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          
+          const leftY = getStackedY(y, usedLeftY);
+          ctx.fillStyle = isBuy ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)';
+          ctx.fillRect(10, leftY - 10, 105, 20);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'left';
+          const pnlValue = Number(pos.pnl);
+          const pnlFormatted = Math.abs(pnlValue) < 1 ? pnlValue.toFixed(4) : pnlValue.toFixed(2);
+          const pnlStr = pnlValue >= 0 ? `+${pnlFormatted}` : pnlFormatted;
+          ctx.fillText(`${pos.type} ${pos.volume} [${pnlStr}]`, 15, leftY + 4);
+
+          const rightY = getStackedY(y, usedRightY);
+          ctx.fillStyle = color;
+          ctx.fillRect(chartW, rightY - 9, PRICE_W, 18);
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(fmtP(pos.entryPrice, asset.digits), chartW + PRICE_W / 2, rightY + 4);
+       }
     });
+
+    // Draw Pending Orders
+    pendingOrders.forEach(ord => {
+       if (ord.symbol !== currentBaseSymbol) return;
+       const y = toY(ord.targetPrice);
+       if (y >= 0 && y <= chartH) {
+          const color = '#f59e0b';
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.setLineDash([2, 4]);
+          ctx.lineWidth = 1;
+          ctx.moveTo(0, y);
+          ctx.lineTo(chartW, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          
+          const leftY = getStackedY(y, usedLeftY);
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+          ctx.fillRect(10, leftY - 10, 85, 20);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${ord.type} ${ord.volume}`, 15, leftY + 4);
+
+          const rightY = getStackedY(y, usedRightY);
+          ctx.fillStyle = color;
+          ctx.fillRect(chartW, rightY - 9, PRICE_W, 18);
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(fmtP(ord.targetPrice, asset.digits), chartW + PRICE_W / 2, rightY + 4);
+       }
+    });
+
+    // Draw Active Binary Bets
+    activeBetsRef.current.forEach(bet => {
+       const y = toY(bet.entryPrice);
+       if (y >= 0 && y <= chartH) {
+          const isRise = bet.type === 'Rise' || bet.type === 'BUY';
+          const color = isRise ? '#10b981' : '#ef4444';
+          
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.setLineDash([2, 2]);
+          ctx.lineWidth = 1.5;
+          ctx.moveTo(0, y);
+          ctx.lineTo(chartW, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          
+          // Label on left with neat spacing offset
+          const leftY = getStackedY(y, usedLeftY);
+          ctx.fillStyle = isRise ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)';
+          ctx.fillRect(10, leftY - 10, 70, 20);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${bet.type} $${bet.amount}`, 15, leftY + 4);
+
+          // Price Tag on the Right Axis with spacing offset
+          const rightY = getStackedY(y, usedRightY);
+          ctx.fillStyle = color;
+          ctx.fillRect(chartW, rightY - 9, PRICE_W, 18);
+          ctx.fillStyle = '#ffffff'; 
+          ctx.font = 'bold 10px monospace'; 
+          ctx.textAlign = 'center';
+          ctx.fillText(fmtP(bet.entryPrice, asset.digits), chartW + PRICE_W / 2, rightY + 4);
+       }
+    });
+
 
     // Store geometry for crosshair
     canvas._geo = { toX, toY, chartW, chartH, PRICE_W, TIME_H, VOL_H, n, cW, pTop, pBot, pSpan, data, panX };

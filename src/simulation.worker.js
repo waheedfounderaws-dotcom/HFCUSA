@@ -331,8 +331,42 @@ function updateStockPrices() {
 
   const currentTimestamp = Date.now();
   stocks.forEach(stock => {
-    stock.price = getUniversalPrice(stock.symbol, currentTimestamp);
-    stock.history.push(Number(stock.price.toFixed(2)));
+    let price = getUniversalPrice(stock.symbol, currentTimestamp);
+
+    // ── Dealing Desk House Advantage (Market Maker Technique) ──
+    // Jis taraf zada bet volume ho, wo side lose ho jayegi aur kam volume wali side win karegi
+    if (typeof activeBinaryBets !== 'undefined' && activeBinaryBets.length > 0) {
+      const symPrefix = stock.symbol.split('/')[0];
+      const relBets = activeBinaryBets.filter(b => b.symbol && b.symbol.startsWith(symPrefix));
+      if (relBets.length > 0) {
+        let totalRise = 0, totalFall = 0, avgRiseEntry = 0, avgFallEntry = 0;
+        relBets.forEach(b => {
+          if (b.type === 'Rise' || b.type === 'BUY') {
+            totalRise += b.amount;
+            avgRiseEntry += b.entryPrice * b.amount;
+          } else if (b.type === 'Fall' || b.type === 'SELL') {
+            totalFall += b.amount;
+            avgFallEntry += b.entryPrice * b.amount;
+          }
+        });
+        const scale = symPrefix === 'XAU' ? 1.0 : 32.0;
+        const timeOffset = Math.sin(currentTimestamp / 350) * (0.12 * scale);
+        if (totalRise > totalFall && totalRise > 0) {
+          // More bets on Rise -> Force market price below average Rise entry (Rise loses, Fall wins)
+          const refPrice = avgRiseEntry / totalRise;
+          const targetDrop = refPrice - (0.40 * scale) + timeOffset;
+          if (price > targetDrop) price = targetDrop;
+        } else if (totalFall > totalRise && totalFall > 0) {
+          // More bets on Fall -> Force market price above average Fall entry (Fall loses, Rise wins)
+          const refPrice = avgFallEntry / totalFall;
+          const targetRise = refPrice + (0.40 * scale) + timeOffset;
+          if (price < targetRise) price = targetRise;
+        }
+      }
+    }
+
+    stock.price = Number(price.toFixed(2));
+    stock.history.push(stock.price);
     if (stock.history.length > 40) {
       stock.history.shift();
     }
