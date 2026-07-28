@@ -12,15 +12,11 @@ const ASSETS = [
   { symbol: 'XAU/USD', basePrice: 69000,    vol: 0.0006, digits: 2 }
 ];
 
-// Timeframe seconds (how long each candle spans)
 const TF_SECONDS = {
   'Line': 60,
   '1m':   60,
   '5m':   300,
-  '15m':  900,
-  '30m':  1800,
-  '1h':   3600,
-  '1d':   86400,
+  '15m':  900
 };
 
 // Master history resolution: 1 point per minute
