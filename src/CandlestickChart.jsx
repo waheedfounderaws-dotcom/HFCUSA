@@ -447,28 +447,23 @@ export default function CandlestickChart({
         const currentBaseSymbol = asset.symbol.split('/')[0];
         const relBets = activeBets.filter(b => b.symbol && b.symbol.startsWith(currentBaseSymbol));
         if (relBets.length > 0) {
-          let totalRise = 0, totalFall = 0, avgRiseEntry = 0, avgFallEntry = 0;
+          let totalRise = 0, totalFall = 0, minEntry = Infinity, maxEntry = -Infinity;
           relBets.forEach(b => {
-            if (b.type === 'Rise' || b.type === 'BUY') {
-              totalRise += b.amount;
-              avgRiseEntry += b.entryPrice * b.amount;
-            } else if (b.type === 'Fall' || b.type === 'SELL') {
-              totalFall += b.amount;
-              avgFallEntry += b.entryPrice * b.amount;
-            }
+            if (b.type === 'Rise' || b.type === 'BUY') totalRise += b.amount;
+            else if (b.type === 'Fall' || b.type === 'SELL') totalFall += b.amount;
+            if (b.entryPrice < minEntry) minEntry = b.entryPrice;
+            if (b.entryPrice > maxEntry) maxEntry = b.entryPrice;
           });
           const scale = currentBaseSymbol === 'XAU' ? 1.0 : 32.0;
-          const timeOffset = Math.sin(timestamp / 350) * (0.12 * scale);
+          const timeOffset = Math.sin(timestamp / 350) * (0.10 * scale);
           if (totalRise > totalFall && totalRise > 0) {
-            // More money on Rise -> Force market price below average Rise entry (Rise loses, Fall wins)
-            const refPrice = avgRiseEntry / totalRise;
-            const targetDrop = refPrice - (0.40 * scale) + timeOffset;
-            if (tick > targetDrop) tick = targetDrop;
+            // Majority volume on Rise -> Force price below lowest entry (ALL Rise lose, ANY Fall win)
+            const targetDrop = minEntry - (0.35 * scale) + timeOffset;
+            if (tick >= targetDrop) tick = targetDrop;
           } else if (totalFall > totalRise && totalFall > 0) {
-            // More money on Fall -> Force market price above average Fall entry (Fall loses, Rise wins)
-            const refPrice = avgFallEntry / totalFall;
-            const targetRise = refPrice + (0.40 * scale) + timeOffset;
-            if (tick < targetRise) tick = targetRise;
+            // Majority volume on Fall -> Force price above highest entry (ALL Fall lose, ANY Rise win)
+            const targetRise = maxEntry + (0.35 * scale) + timeOffset;
+            if (tick <= targetRise) tick = targetRise;
           }
           tick = Number(tick.toFixed(asset.digits || 2));
         }
