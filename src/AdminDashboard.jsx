@@ -30,7 +30,7 @@ export default function AdminDashboard({ state, onTriggerShock, onUpdateConfig, 
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', paddingBottom: '8px' }}>
         {hasPerm('overview') && (
           <button className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('overview')}>
             <Activity size={16} /> Overview & Engine
