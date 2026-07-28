@@ -112,9 +112,12 @@ function initGlobalHistory(symbol, currentPrice, vol, currentTimestamp = Date.no
     lows[i] = Number((Math.min(o, c) - wickBot).toFixed(2));
   }
   
-  closes[HISTORY_MINS - 1] = currentPrice;
-  if (currentPrice > highs[HISTORY_MINS - 1]) highs[HISTORY_MINS - 1] = currentPrice;
-  if (currentPrice < lows[HISTORY_MINS - 1]) lows[HISTORY_MINS - 1] = currentPrice;
+  // Prevent startup spike: Only update closes/highs/lows if currentPrice is aligned with deterministic price
+  if (typeof currentPrice === 'number' && !isNaN(currentPrice) && Math.abs(currentPrice - opens[HISTORY_MINS - 1]) < (isGold ? 15.0 : 500.0)) {
+    closes[HISTORY_MINS - 1] = currentPrice;
+    if (currentPrice > highs[HISTORY_MINS - 1]) highs[HISTORY_MINS - 1] = currentPrice;
+    if (currentPrice < lows[HISTORY_MINS - 1]) lows[HISTORY_MINS - 1] = currentPrice;
+  }
 
   GLOBAL_HISTORY[symbol].opens = opens;
   GLOBAL_HISTORY[symbol].highs = highs;
@@ -382,7 +385,8 @@ export default function CandlestickChart({
   useEffect(() => {
     const currentBaseSymbol = asset.symbol.split('/')[0];
     const liveStock = state?.stocks?.find(s => s.symbol === currentBaseSymbol);
-    const startPrice = liveStock ? liveStock.price : asset.basePrice;
+    const univNow = getUniversalPrice(asset.symbol, Date.now());
+    const startPrice = (liveStock && Math.abs(liveStock.price - univNow) < (currentBaseSymbol === 'XAU' ? 25 : 800)) ? liveStock.price : univNow;
 
     initGlobalHistory(asset.symbol, startPrice, asset.vol);
     const m = GLOBAL_HISTORY[asset.symbol];
@@ -391,8 +395,8 @@ export default function CandlestickChart({
     const closed = aggregate(m, tfSeconds, 1000);
     candlesRef.current = closed;
 
-    // Seed live price from worker or last closed candle
-    const seedPrice = liveStock ? liveStock.price : (closed.length > 0 ? closed[closed.length - 1].close : asset.basePrice);
+    // Seed live price from worker, last closed candle, or universal formula (eliminates startup spike!)
+    const seedPrice = (liveStock && Math.abs(liveStock.price - univNow) < (currentBaseSymbol === 'XAU' ? 25 : 800)) ? liveStock.price : (closed.length > 0 ? closed[closed.length - 1].close : univNow);
     livePriceRef.current = seedPrice;
 
     // Open candle for current bucket (resumes existing candle logic)
@@ -507,10 +511,11 @@ export default function CandlestickChart({
               master.opens.copyWithin(0, 1);
               master.highs.copyWithin(0, 1);
               master.lows.copyWithin(0, 1);
+              const exactMinOpen = getUniversalPrice(asset.symbol, master.startTs + HISTORY_MINS * MIN_INTERVAL_MS);
               master.closes[HISTORY_MINS - 1] = tick;
-              master.opens[HISTORY_MINS - 1] = tick;
-              master.highs[HISTORY_MINS - 1] = tick;
-              master.lows[HISTORY_MINS - 1] = tick;
+              master.opens[HISTORY_MINS - 1] = exactMinOpen;
+              master.highs[HISTORY_MINS - 1] = Math.max(exactMinOpen, tick);
+              master.lows[HISTORY_MINS - 1] = Math.min(exactMinOpen, tick);
               master.startTs += MIN_INTERVAL_MS;
           }
       }
@@ -518,8 +523,9 @@ export default function CandlestickChart({
       if (oc && bkTs > oc.ts) {
         const closed = { ...oc };
         candlesRef.current = [...candlesRef.current.slice(-300), closed];
+        const exactOpen = getUniversalPrice(asset.symbol, bkTs);
         openCandleRef.current = {
-          ts: bkTs, open: tick, high: tick, low: tick, close: tick, volume: 0,
+          ts: bkTs, open: exactOpen, high: Math.max(exactOpen, tick), low: Math.min(exactOpen, tick), close: tick, volume: 1,
         };
       } else if (oc) {
         openCandleRef.current = {
@@ -530,8 +536,9 @@ export default function CandlestickChart({
           volume: oc.volume + 1,
         };
       } else {
+        const exactOpen = getUniversalPrice(asset.symbol, bkTs);
         openCandleRef.current = {
-          ts: bkTs, open: tick, high: tick, low: tick, close: tick, volume: 0,
+          ts: bkTs, open: exactOpen, high: Math.max(exactOpen, tick), low: Math.min(exactOpen, tick), close: tick, volume: 1,
         };
       }
 
@@ -1307,9 +1314,9 @@ export default function CandlestickChart({
      No binary options handleBet needed
   ─────────────────────────────────────────── */
 
-  const livePrice   = livePriceRef.current ?? asset.basePrice;
-  const initPrice   = masterRef.current?.closes[0] ?? asset.basePrice;
-  const pctChange   = ((livePrice - asset.basePrice) / asset.basePrice * 100).toFixed(2);
+  const livePrice   = livePriceRef.current ?? getUniversalPrice(asset.symbol, Date.now());
+  const initPrice   = masterRef.current?.closes[0] ?? livePrice;
+  const pctChange   = (initPrice > 0 ? ((livePrice - initPrice) / initPrice * 100) : 0).toFixed(2);
   const isUp        = parseFloat(pctChange) >= 0;
 
   return (
