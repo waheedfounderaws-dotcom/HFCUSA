@@ -819,8 +819,8 @@ app.get('/api/admin/users', async (req, res) => {
             const userTx = txMap[uid] || { depositCount: 0, totalDeposit: 0, totalWithdrawal: 0 };
             const totalLoss = lossMap[uid] || 0;
             const avgDeposit = userTx.depositCount > 0 ? (userTx.totalDeposit / userTx.depositCount) : 0;
-            const lastActiveTime = u.lastActive ? new Date(u.lastActive).getTime() : (u.updatedAt ? new Date(u.updatedAt).getTime() : 0);
-            const isOnline = lastActiveTime ? (Date.now() - lastActiveTime < 3 * 60 * 1000) : false;
+            const lastActiveTime = u.lastActive ? new Date(u.lastActive).getTime() : 0;
+            const isOnline = lastActiveTime > 0 ? (Date.now() - lastActiveTime < 2 * 60 * 1000) : false;
 
             return {
                 id: uid,
