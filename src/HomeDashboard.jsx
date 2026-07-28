@@ -78,7 +78,7 @@ function BannerCarousel() {
 }
 
 const PAIR_META = {
-  XAU: { icon: '🥇', full: 'XAU/USD Gold', color: '#f59e0b' },
+  XAU: { icon: '₿', full: 'BTC/USD Bitcoin', color: '#f7931a' },
 };
 
 export default function HomeDashboard({ state, onNavigate }) {
@@ -93,7 +93,7 @@ export default function HomeDashboard({ state, onNavigate }) {
         <div>
           <h1 className="page-title">Market Overview</h1>
           <p style={{ color:'var(--text-muted)', fontSize:'13px', marginTop:'4px' }}>
-            {(globalStats.totalTraders ?? 3120).toLocaleString()} AI agents trading XAU/USD Gold in real-time
+            {(globalStats.totalTraders ?? 3120).toLocaleString()} AI agents trading BTC/USD Bitcoin in real-time
           </p>
         </div>
         <span style={{ fontSize:'12px', color:'var(--success)', display:'flex', alignItems:'center', gap:'5px', fontWeight:'600' }}>
@@ -199,7 +199,7 @@ export default function HomeDashboard({ state, onNavigate }) {
               Firm Offer — Live Candlestick Chart
             </div>
             <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'3px' }}>
-              XAU/USD Gold · Rise &amp; Fall trading with real-time candlestick charts
+              BTC/USD Bitcoin · Rise &amp; Fall trading with real-time candlestick charts
             </div>
           </div>
         </div>

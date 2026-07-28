@@ -1379,7 +1379,7 @@ export default function CandlestickChart({
               {activeBets.length === 0 ? <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'10px' }}>No active bets</div> : activeBets.map(bet => (
                 <div key={bet.id} style={{ background:'var(--bg-card)', borderLeft:`4px solid ${bet.type==='Rise'?'var(--success)':'var(--danger)'}`, borderRadius:'8px', padding:'10px 14px', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
                   <div>
-                    <div style={{ fontWeight:'700', fontSize:'13px', color:'var(--text-bright)' }}>{bet.symbol} <span style={{ color:bet.type==='Rise'?'var(--success)':'var(--danger)' }}>{bet.type}</span> ${bet.amount}</div>
+                    <div style={{ fontWeight:'700', fontSize:'13px', color:'var(--text-bright)' }}>BTC/USD <span style={{ color:bet.type==='Rise'?'var(--success)':'var(--danger)' }}>{bet.type}</span> ${bet.amount}</div>
                     <div style={{ fontSize:'11px', color:'var(--text-muted)', marginTop:'2px' }}>Entry: {Number(bet.entryPrice).toFixed(3)}</div>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end' }}>
@@ -1396,7 +1396,7 @@ export default function CandlestickChart({
               {records.length === 0 ? <div style={{ fontSize:'12px', color:'var(--text-muted)' }}>No trade history</div> : records.map((rec, i) => (
                 <div key={i} style={{ background:'var(--bg-card)', borderLeft:`4px solid ${rec.pnl>=0?'var(--success)':'var(--danger)'}`, borderRadius:'8px', padding:'10px 14px', marginBottom:'8px', display:'flex', justifyContent:'space-between', alignItems:'center', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
                   <div>
-                    <div style={{ fontWeight:'700', fontSize:'13px', color:'var(--text-bright)' }}>{rec.symbol} <span style={{ color:rec.type==='Rise'?'var(--success)':'var(--danger)' }}>{rec.type}</span> ${rec.amount || rec.volume}</div>
+                    <div style={{ fontWeight:'700', fontSize:'13px', color:'var(--text-bright)' }}>BTC/USD <span style={{ color:rec.type==='Rise'?'var(--success)':'var(--danger)' }}>{rec.type}</span> ${rec.amount || rec.volume}</div>
                     <div style={{ fontSize:'11px', color:'var(--text-muted)', marginTop:'2px' }}>Entry: {Number(rec.entryPrice).toFixed(3)} → Close: {Number(rec.closePrice).toFixed(3)}</div>
                     <div style={{ fontSize:'10px', color:'var(--text-muted)', marginTop:'2px' }}>{rec.reason} • {new Date(rec.closeTime).toLocaleTimeString()}</div>
                   </div>
@@ -1411,8 +1411,8 @@ export default function CandlestickChart({
           {/* ══ PRICE HEADER ══ */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 10px', background:'var(--bg-card)', borderBottom:'1px solid var(--border-color)', flexShrink:0, position:'relative' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-              <span style={{ fontWeight:'800', fontSize:'16px', color:'var(--text-bright)', fontFamily:'var(--font-display)', letterSpacing: '0.5px' }}>{asset.symbol}</span>
-              <span style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>Gold</span>
+              <span style={{ fontWeight:'800', fontSize:'16px', color:'var(--text-bright)', fontFamily:'var(--font-display)', letterSpacing: '0.5px' }}>BTC/USD</span>
+              <span style={{ background: 'linear-gradient(135deg, #f7931a, #d97706)', color: '#fff', fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>BITCOIN</span>
             </div>
 
             <div style={{ display:'flex', gap:'15px', textAlign:'right' }}>
