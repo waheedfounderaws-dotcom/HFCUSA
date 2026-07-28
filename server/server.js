@@ -658,7 +658,7 @@ app.post('/api/withdraw', async (req, res) => {
         res.json({ success: true, message: "Withdrawal request submitted successfully", withdrawalId: newWithdrawal._id });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: "Server error during withdrawal" });
+        res.status(500).json({ success: false, message: "Server error during withdrawal: " + err.message });
     }
 });
 
