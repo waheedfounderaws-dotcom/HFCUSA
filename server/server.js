@@ -15,13 +15,32 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://waheedfounderaws_db_user:4SLZbc4ywww5FVjF@ac-fxmgzac-shard-00-00.4fnlkhk.mongodb.net:27017,ac-fxmgzac-shard-00-01.4fnlkhk.mongodb.net:27017,ac-fxmgzac-shard-00-02.4fnlkhk.mongodb.net:27017/alphaquest?ssl=true&replicaSet=atlas-4zo895-shard-0&authSource=admin&appName=Cluster0";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://admin:hfcusa123@cluster0.rt2p9.mongodb.net/hfcusa?retryWrites=true&w=majority&appName=Cluster0";
 
-if (!mongoose.connection.readyState) {
-    mongoose.connect(MONGODB_URI)
-      .then(() => console.log("Connected to MongoDB successfully!"))
-      .catch(err => console.error("MongoDB connection error:", err));
+// Serverless DB Connection Middleware
+let isConnecting = false;
+async function connectToDatabase() {
+    if (mongoose.connection.readyState >= 1) {
+        return;
+    }
+    if (isConnecting) return;
+    isConnecting = true;
+    try {
+        await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000
+        });
+        console.log('MongoDB Connected to Production (HFCUSA)');
+    } catch (err) {
+        console.error('MongoDB Connection Error:', err);
+    } finally {
+        isConnecting = false;
+    }
 }
+
+app.use(async (req, res, next) => {
+    await connectToDatabase();
+    next();
+});
 
 // Middleware
 app.use(cors());
