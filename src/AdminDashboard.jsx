@@ -890,32 +890,36 @@ function UserManagementTab({ state, onAdminAction }) {
             </thead>
             <tbody>
               {(() => {
-                const ipCounts = {};
-                const ipColorMap = {};
-                const highlightColors = [
-                  { bg: 'rgba(239, 68, 68, 0.25)', text: '#f87171', border: '1px solid #ef4444', label: '🔴 DUPLICATE' },
-                  { bg: 'rgba(249, 115, 22, 0.25)', text: '#fb923c', border: '1px solid #f97316', label: '🟠 DUPLICATE' },
-                  { bg: 'rgba(168, 85, 247, 0.25)', text: '#c084fc', border: '1px solid #a855f7', label: '🟣 DUPLICATE' },
-                  { bg: 'rgba(234, 179, 8, 0.25)',  text: '#facc15', border: '1px solid #eab308', label: '🟡 DUPLICATE' },
-                  { bg: 'rgba(59, 130, 246, 0.25)', text: '#60a5fa', border: '1px solid #3b82f6', label: '🔵 DUPLICATE' },
-                ];
-                
-                realUsers.forEach(u => {
-                  const ip = u.ipAddress || (u.id === '525810' ? '127.0.0.1' : `39.${(parseInt((u.id+'').slice(0,2)) || 10) % 180 + 20}.${(parseInt((u.id+'').slice(2,4)) || 5) % 200 + 10}.${(parseInt((u.id+'').slice(4,6)) || 3) % 250 + 1}`);
-                  u._computedIp = ip;
-                  ipCounts[ip] = (ipCounts[ip] || 0) + 1;
-                });
+                try {
+                  const ipCounts = {};
+                  const ipColorMap = {};
+                  const highlightColors = [
+                    { bg: 'rgba(239, 68, 68, 0.25)', text: '#f87171', border: '1px solid #ef4444', label: '🔴 DUPLICATE' },
+                    { bg: 'rgba(249, 115, 22, 0.25)', text: '#fb923c', border: '1px solid #f97316', label: '🟠 DUPLICATE' },
+                    { bg: 'rgba(168, 85, 247, 0.25)', text: '#c084fc', border: '1px solid #a855f7', label: '🟣 DUPLICATE' },
+                    { bg: 'rgba(234, 179, 8, 0.25)',  text: '#facc15', border: '1px solid #eab308', label: '🟡 DUPLICATE' },
+                    { bg: 'rgba(59, 130, 246, 0.25)', text: '#60a5fa', border: '1px solid #3b82f6', label: '🔵 DUPLICATE' },
+                  ];
+                  
+                  (realUsers || []).forEach(u => {
+                    if (!u) return;
+                    const idStr = (u.id || '') + '';
+                    const ip = u.ipAddress || (u.id === '525810' ? '127.0.0.1' : `39.${(parseInt(idStr.slice(0,2)) || 10) % 180 + 20}.${(parseInt(idStr.slice(2,4)) || 5) % 200 + 10}.${(parseInt(idStr.slice(4,6)) || 3) % 250 + 1}`);
+                    u._computedIp = ip;
+                    ipCounts[ip] = (ipCounts[ip] || 0) + 1;
+                  });
 
-                let colorIdx = 0;
-                Object.keys(ipCounts).forEach(ip => {
-                  if (ipCounts[ip] > 1) {
-                    ipColorMap[ip] = highlightColors[colorIdx % highlightColors.length];
-                    colorIdx++;
-                  }
-                });
+                  let colorIdx = 0;
+                  Object.keys(ipCounts).forEach(ip => {
+                    if (ipCounts[ip] > 1) {
+                      ipColorMap[ip] = highlightColors[colorIdx % highlightColors.length];
+                      colorIdx++;
+                    }
+                  });
 
-                return realUsers.map(u => {
-                  const dupStyle = ipColorMap[u._computedIp];
+                  return (realUsers || []).map(u => {
+                    if (!u) return null;
+                    const dupStyle = ipColorMap[u._computedIp];
                   return (
                 <tr 
                   className="all-users-row" 
@@ -1014,8 +1018,14 @@ function UserManagementTab({ state, onAdminAction }) {
                     </button>
                   </td>
                 </tr>
+                    );
+                  });
+                } catch (err) {
+                  console.error("Error rendering users table:", err);
+                  return (
+                    <tr><td colSpan="9" style={{color:'red', padding:'20px'}}>Error rendering table: {err.message}</td></tr>
                   );
-                });
+                }
               })()}
             </tbody>
           </table>
@@ -1630,8 +1640,8 @@ function PendingTransfersTab({ state, onAdminAction }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const { supportTickets = [] } = state;
-  const financialTickets = supportTickets.filter(t => t.isFinancial);
+  const supportTickets = (state && state.supportTickets) ? state.supportTickets : [];
+  const financialTickets = supportTickets.filter(t => t && t.isFinancial);
 
   const handleResolve = async (id, approve = false) => {
     const ticket = supportTickets.find(t => t.id === id);
