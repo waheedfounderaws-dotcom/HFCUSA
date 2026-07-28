@@ -736,6 +736,18 @@ function OfficialModule() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto', color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.7' }}>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <img 
+            src="/certificate.png" 
+            alt="License of Trading" 
+            style={{ 
+              maxWidth: '100%', 
+              borderRadius: '8px', 
+              border: '2px solid var(--border-color)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }} 
+          />
+        </div>
         <p>
           HFCusa is an advanced financial trading platform utilizing real-time calculation engines for market activities. It models seamless execution and analytics in a robust trading environment.
         </p>
