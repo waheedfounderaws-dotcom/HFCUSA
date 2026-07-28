@@ -118,6 +118,8 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
   const selectedDateStr = (selYear && selMonth && selDay) ? new Date(selYear, selMonth - 1, selDay).toDateString() : new Date().toDateString();
   const isSelectedToday = selectedDateStr === new Date().toDateString();
 
+  const [realUserCount, setRealUserCount] = useState(null);
+
   useEffect(() => {
     const fetchLiveDbStats = () => {
       fetch(`${API_BASE_URL}/api/stats/daily_update`)
@@ -134,6 +136,14 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
         .then(data => {
           if (data.success && data.activeTrades) {
             setServerActiveTrades(data.activeTrades);
+          }
+        }).catch(() => {});
+
+      fetch(`${API_BASE_URL}/api/admin/users`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.users)) {
+            setRealUserCount(data.users.length);
           }
         }).catch(() => {});
     };
@@ -211,7 +221,7 @@ function OverviewTab({ state, onUpdateConfig, onTriggerShock, onResetSim, global
           <div className="stat-icon-container primary"><Users size={19}/></div>
           <div className="stat-info">
             <span className="stat-label">Active Traders</span>
-            <span className="stat-value">{(globalStats.totalTraders ?? 3120).toLocaleString()}</span>
+            <span className="stat-value">{(realUserCount ?? globalStats.totalTraders ?? 0).toLocaleString()}</span>
           </div>
         </div>
         <div className="card stat-card">
