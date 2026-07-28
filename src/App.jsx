@@ -17,7 +17,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('aq_auth') === 'true';
   });
-  const [activeTab, setActiveTab] = useState('my');
+  const [activeTab, setActiveTab] = useState('transaction');
   const [globalActiveBets, setGlobalActiveBets] = useState([]);
   const globalActiveBetsRef = useRef([]);
   const simStateRef = useRef(null);
@@ -136,9 +136,9 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle login success
   const handleLoginSuccess = (userData) => {
     setIsAuthenticated(true);
+    setActiveTab('transaction');
     localStorage.setItem('aq_auth', 'true');
     localStorage.setItem('aq_userData', JSON.stringify(userData));
     setSimState(prev => ({
@@ -194,7 +194,7 @@ function App() {
     localStorage.removeItem('aq_auth');
     localStorage.removeItem('aq_userData');
     setActiveFunc(null);
-    setActiveTab('my');
+    setActiveTab('transaction');
     simWorker.postMessage({ type: 'LOGOUT_USER' });
   };
 
