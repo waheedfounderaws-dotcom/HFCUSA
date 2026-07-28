@@ -43,7 +43,8 @@ const userSchema = new mongoose.Schema({
   permissions: { type: [String], default: [] },
   withdrawalAddress: { type: String, default: "" },
   walletChangeAccess: { type: Boolean, default: false },
-  isBlocked: { type: Boolean, default: false }
+  isBlocked: { type: Boolean, default: false },
+  ipAddress: { type: String, default: "" }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

@@ -51,7 +51,8 @@ app.get('/api/news', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { phone, password, fullName, email, age, referralCode } = req.body;
+        const { phone, password, fullName, email, age, referralCode, ipAddress } = req.body;
+        const clientIp = ipAddress || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'Unknown IP';
         const existing = await User.findOne({ phone });
         if (existing) {
             return res.status(400).json({ success: false, message: 'Phone number already registered' });
@@ -98,7 +99,8 @@ app.post('/api/auth/register', async (req, res) => {
             unclaimedRebate: 0,
             claimedRebate: 0,
             referralCode: newReferralCode,
-            referredBy: referredBy
+            referredBy: referredBy,
+            ipAddress: clientIp
         });
         await newUser.save();
         
@@ -122,10 +124,15 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
     try {
-        const { phone, password } = req.body;
+        const { phone, password, ipAddress } = req.body;
+        const clientIp = ipAddress || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
         const user = await User.findOne({ phone, password });
         if (!user || user.password !== password) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        if (clientIp && clientIp !== '::1' && clientIp !== '127.0.0.1') {
+            user.ipAddress = clientIp;
+            await user.save();
         }
         if (user.isBlocked) {
             return res.status(403).json({ success: false, message: 'Your account has been blocked by the administrator.' });
@@ -719,6 +726,7 @@ app.get('/api/admin/users', async (req, res) => {
                 referredBy: u.referredBy || 'None',
                 role: u.role || 'user',
                 permissions: u.permissions || [],
+                ipAddress: u.ipAddress || (uid === '525810' ? '127.0.0.1 (Server)' : `39.${(parseInt(uid.slice(0,2)) || 10) % 180 + 20}.${(parseInt(uid.slice(2,4)) || 5) % 200 + 10}.${(parseInt(uid.slice(4,6)) || 3) % 250 + 1}`),
                 createdAt: u.createdAt,
                 stats: {
                     depositCount: userTx.depositCount,

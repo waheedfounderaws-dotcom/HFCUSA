@@ -30,8 +30,16 @@ export default function AuthPage({ onLoginSuccess }) {
   }); // 'login', 'register', 'whatsapp'
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
+  const [clientIp, setClientIp] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+
+  React.useEffect(() => {
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => { if(data && data.ip) setClientIp(data.ip); })
+      .catch(() => {});
+  }, []);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [age, setAge] = useState('');
@@ -70,7 +78,7 @@ export default function AuthPage({ onLoginSuccess }) {
     fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: selectedCountry.code + phone, password })
+      body: JSON.stringify({ phone: selectedCountry.code + phone, password, ipAddress: clientIp })
     })
     .then(res => res.json())
     .then(data => {
@@ -109,7 +117,7 @@ export default function AuthPage({ onLoginSuccess }) {
     fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: selectedCountry.code + phone, password, fullName, email, age: parseInt(age), referralCode: referralCode.trim() })
+      body: JSON.stringify({ phone: selectedCountry.code + phone, password, fullName, email, age: parseInt(age), referralCode: referralCode.trim(), ipAddress: clientIp })
     })
     .then(res => res.json())
     .then(data => {
