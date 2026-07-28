@@ -1756,20 +1756,20 @@ function PendingTransfersTab({ state, onAdminAction }) {
               </div>
               <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-color)' }}>
                 <strong style={{ color: ticket.actionType === 'DEPOSIT' ? 'var(--success)' : 'var(--danger)' }}>[{ticket.actionType}] </strong> 
-                {ticket.issue.includes('(From Rebate Wallet)') ? (
+                {(ticket.issue || '').includes('(From Rebate Wallet)') ? (
                   <>
-                    {ticket.issue.split('(From Rebate Wallet)')[0]}
+                    {(ticket.issue || '').split('(From Rebate Wallet)')[0]}
                     <span style={{ color: '#ec4899', fontWeight: 'bold', background: 'rgba(236,72,153,0.1)', padding: '2px 6px', borderRadius: '4px', margin: '0 4px', display: 'inline-block' }}>(From Rebate Wallet)</span>
-                    {ticket.issue.split('(From Rebate Wallet)')[1]}
+                    {(ticket.issue || '').split('(From Rebate Wallet)')[1]}
                   </>
-                ) : ticket.issue.includes('(From Claimed Rebate)') ? (
+                ) : (ticket.issue || '').includes('(From Claimed Rebate)') ? (
                   <>
-                    {ticket.issue.split('(From Claimed Rebate)')[0]}
+                    {(ticket.issue || '').split('(From Claimed Rebate)')[0]}
                     <span style={{ color: '#ec4899', fontWeight: 'bold', background: 'rgba(236,72,153,0.1)', padding: '2px 6px', borderRadius: '4px', margin: '0 4px', display: 'inline-block' }}>(From Claimed Rebate)</span>
-                    {ticket.issue.split('(From Claimed Rebate)')[1]}
+                    {(ticket.issue || '').split('(From Claimed Rebate)')[1]}
                   </>
                 ) : (
-                  ticket.issue
+                  ticket.issue || 'No details provided.'
                 )}
               </p>
               
