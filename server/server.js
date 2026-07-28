@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://admin:hfcusa123@cluster0.rt2p9.mongodb.net/hfcusa?retryWrites=true&w=majority&appName=Cluster0";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://waheedfounderaws_db_user:4SLZbc4ywww5FVjF@ac-fxmgzac-shard-00-00.4fnlkhk.mongodb.net:27017,ac-fxmgzac-shard-00-01.4fnlkhk.mongodb.net:27017,ac-fxmgzac-shard-00-02.4fnlkhk.mongodb.net:27017/alphaquest?ssl=true&replicaSet=atlas-4zo895-shard-0&authSource=admin&appName=Cluster0";
 
 // Serverless DB Connection Middleware
 let isConnecting = false;
