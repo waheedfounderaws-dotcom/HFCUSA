@@ -353,6 +353,9 @@ export default function CandlestickChart({
   }, []);
   const [panX, setPanX] = useState(0); 
   const [priceRange, setPriceRange] = useState(null); 
+  const [isTradeLocked, setIsTradeLocked] = useState(false);
+  const [lockSecondsLeft, setLockSecondsLeft] = useState(0);
+  const isTradeLockedRef = useRef(false); 
 
   const interactRef = useRef({
     isDragging: false,
@@ -440,12 +443,32 @@ export default function CandlestickChart({
       const timestamp = customTimestamp || Date.now();
       let tick = customPrice || getUniversalPrice(asset.symbol, timestamp);
 
+      // Compute trade lock window status for the active timeframe
+      const currentTfs = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
+      const nextCandleEnd = Math.floor(timestamp / (currentTfs * 1000)) * (currentTfs * 1000) + (currentTfs * 1000);
+      const sRemaining = Math.max(0, Math.floor((nextCandleEnd - timestamp) / 1000));
+      const lockThreshold = currentTfs >= 300 ? 60 : (currentTfs <= 60 ? 15 : Math.min(60, Math.floor(currentTfs / 4)));
+      const lockedState = sRemaining <= lockThreshold && sRemaining >= 0;
+      if (isTradeLockedRef.current !== lockedState) {
+        isTradeLockedRef.current = lockedState;
+        setIsTradeLocked(lockedState);
+      }
+      setLockSecondsLeft(sRemaining);
+
       // ── Dealing Desk House Advantage (Market Maker Technique) ──
       // Jis taraf zada bet volume ho, wo side lose ho jayegi aur kam volume wali side win karegi
+      // Exclusively triggered during the final locked window!
       const activeBets = activeBetsRef.current || [];
       if (activeBets.length > 0) {
         const currentBaseSymbol = asset.symbol.split('/')[0];
-        const relBets = activeBets.filter(b => b.symbol && b.symbol.startsWith(currentBaseSymbol));
+        const relBets = activeBets.filter(b => {
+           if (!b.symbol || !b.symbol.startsWith(currentBaseSymbol)) return false;
+           const bTfs = b.tfs || 60;
+           const bEndTs = b.targetCloseTs ? b.targetCloseTs : (Math.floor(b.placedTs / (bTfs * 1000)) * (bTfs * 1000) + (bTfs * 1000));
+           const bLeft = Math.max(0, Math.floor((bEndTs - timestamp) / 1000));
+           const bThresh = bTfs >= 300 ? 60 : (bTfs <= 60 ? 15 : Math.min(60, Math.floor(bTfs / 4)));
+           return bLeft <= bThresh; // Decision is ONLY taken in the final locked time period!
+        });
         if (relBets.length > 0) {
           let totalRise = 0, totalFall = 0, minEntry = Infinity, maxEntry = -Infinity;
           relBets.forEach(b => {
@@ -479,15 +502,14 @@ export default function CandlestickChart({
       if (riseEl && riseEl.innerText !== formatted) riseEl.innerText = formatted;
 
       // Check for massive gap and regenerate history if needed
+      const tfs    = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
       const reinitialized = initGlobalHistory(asset.symbol, tick, asset.vol, timestamp);
       if (reinitialized) {
           masterRef.current = GLOBAL_HISTORY[asset.symbol];
-          const tfs = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
           candlesRef.current = aggregate(masterRef.current, tfs, 1000);
           openCandleRef.current = null;
       }
 
-      const tfs    = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
       const dMs    = tfs * 1_000;
       const bkTs   = Math.floor(timestamp / dMs) * dMs;
       const oc     = openCandleRef.current;
@@ -566,6 +588,12 @@ export default function CandlestickChart({
   ─────────────────────────────────────────── */
   // Binary Betting Logic
   const handlePlaceBinaryBet = (type) => { // 'Rise' or 'Fall'
+    const tfs = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
+    const thresh = tfs >= 300 ? 60 : (tfs <= 60 ? 15 : Math.min(60, Math.floor(tfs / 4)));
+    if (isTradeLockedRef.current || isTradeLocked) {
+       alert(`🔒 Trade Entry Locked!\n\nTrading is locked during the final ${thresh} seconds of this expiring candle.\nNo new trades can enter until the new candle starts in ${lockSecondsLeft}s.`);
+       return;
+    }
     const amt = parseFloat(lotSize);
     if (isNaN(amt) || amt <= 0) return alert('Enter a valid amount');
     if (balance < amt) return alert('Insufficient balance');
@@ -575,7 +603,6 @@ export default function CandlestickChart({
       onBetSettle({ profit: -amt, record: null });
     }
 
-    const tfs = TF_SECONDS[showLine ? 'Line' : tfKey] || 60;
     const currentBucket = Math.floor(Date.now() / (tfs * 1000)) * (tfs * 1000);
     const targetCloseTs = currentBucket + (tfs * 1000);
     
@@ -1482,16 +1509,22 @@ export default function CandlestickChart({
             </div>
             
             {/* Buttons */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px', marginTop:'0px' }}>
-              <button onClick={()=>handlePlaceBinaryBet('Rise')} 
-                style={{ padding:'5px', borderRadius:'4px', border:'none', background:'#10b981', color:'#fff', fontSize:'11px', fontWeight:'700', cursor:'pointer', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'center', gap:'3px', boxShadow:'0 2px 5px rgba(16,185,129,0.2)', transition:'all 0.2s', fontFamily:'var(--font-sans)' }}>
-                <TrendingUp size={14}/> Rise
-              </button>
-              <button onClick={()=>handlePlaceBinaryBet('Fall')}
-                style={{ padding:'5px', borderRadius:'4px', border:'none', background:'#ef4444', color:'#fff', fontSize:'11px', fontWeight:'700', cursor:'pointer', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'center', gap:'3px', boxShadow:'0 2px 5px rgba(239,68,68,0.2)', transition:'all 0.2s', fontFamily:'var(--font-sans)' }}>
-                <TrendingDown size={14}/> Fall
-              </button>
-            </div>
+            {isTradeLocked ? (
+              <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px dashed var(--danger)', borderRadius: '4px', padding: '6px 8px', textAlign: 'center', color: '#ff6b6b', fontSize: '11px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', letterSpacing: '0.5px' }}>
+                 🔒 TRADING LOCKED FOR EXPIRY — NEW CANDLE IN {lockSecondsLeft}s
+              </div>
+            ) : (
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px', marginTop:'0px' }}>
+                <button onClick={()=>handlePlaceBinaryBet('Rise')} 
+                  style={{ padding:'5px', borderRadius:'4px', border:'none', background:'#10b981', color:'#fff', fontSize:'11px', fontWeight:'700', cursor:'pointer', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'center', gap:'3px', boxShadow:'0 2px 5px rgba(16,185,129,0.2)', transition:'all 0.2s', fontFamily:'var(--font-sans)' }}>
+                  <TrendingUp size={14}/> Rise
+                </button>
+                <button onClick={()=>handlePlaceBinaryBet('Fall')}
+                  style={{ padding:'5px', borderRadius:'4px', border:'none', background:'#ef4444', color:'#fff', fontSize:'11px', fontWeight:'700', cursor:'pointer', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'center', gap:'3px', boxShadow:'0 2px 5px rgba(239,68,68,0.2)', transition:'all 0.2s', fontFamily:'var(--font-sans)' }}>
+                  <TrendingDown size={14}/> Fall
+                </button>
+              </div>
+            )}
             
             {/* Active Trades & Terminal Access (Moved to Top Header) */}
             
