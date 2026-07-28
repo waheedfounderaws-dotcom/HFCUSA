@@ -78,8 +78,7 @@ function BannerCarousel() {
 }
 
 const PAIR_META = {
-  XAU: { icon: '🥇', full: 'XAU/USD', color: '#f59e0b' },
-  BTC: { icon: '₿',  full: 'BTC/USD', color: '#06b6d4' },
+  XAU: { icon: '🥇', full: 'XAU/USD Gold', color: '#f59e0b' },
 };
 
 export default function HomeDashboard({ state, onNavigate }) {
@@ -94,7 +93,7 @@ export default function HomeDashboard({ state, onNavigate }) {
         <div>
           <h1 className="page-title">Market Overview</h1>
           <p style={{ color:'var(--text-muted)', fontSize:'13px', marginTop:'4px' }}>
-            {(globalStats.totalTraders ?? 3120).toLocaleString()} AI agents trading XAU/USD &amp; BTC/USD in real-time
+            {(globalStats.totalTraders ?? 3120).toLocaleString()} AI agents trading XAU/USD Gold in real-time
           </p>
         </div>
         <span style={{ fontSize:'12px', color:'var(--success)', display:'flex', alignItems:'center', gap:'5px', fontWeight:'600' }}>
@@ -104,8 +103,8 @@ export default function HomeDashboard({ state, onNavigate }) {
 
 
 
-      {/* ── Live Pair Cards (XAU/USD + BTC/USD) ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'clamp(10px,2vw,20px)' }}>
+      {/* ── Live Pair Cards (XAU/USD Gold) ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'clamp(10px,2vw,20px)' }}>
         {stocks.map(stock => {
           const meta   = PAIR_META[stock.symbol] || {};
           const isUp   = (stock.dailyChange ?? 0) >= 0;
@@ -200,7 +199,7 @@ export default function HomeDashboard({ state, onNavigate }) {
               Firm Offer — Live Candlestick Chart
             </div>
             <div style={{ fontSize:'12px', color:'var(--text-muted)', marginTop:'3px' }}>
-              XAU/USD · BTC/USD · Rise &amp; Fall betting with real-time charts
+              XAU/USD Gold · Rise &amp; Fall trading with real-time candlestick charts
             </div>
           </div>
         </div>

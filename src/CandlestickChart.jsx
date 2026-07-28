@@ -9,8 +9,7 @@ import { simWorker } from './App';
    CONSTANTS
 ═══════════════════════════════════════════════════ */
 const ASSETS = [
-  { symbol: 'XAU/USD', basePrice: 3325,    vol: 0.0006, digits: 2 },
-  { symbol: 'BTC/USD', basePrice: 105200,  vol: 0.0022, digits: 2 },
+  { symbol: 'XAU/USD', basePrice: 3325,    vol: 0.0006, digits: 2 }
 ];
 
 // Timeframe seconds (how long each candle spans)
@@ -36,8 +35,7 @@ const HISTORY_MINS  = 90 * 24 * 60; // 129,600
    Maintains state across chart switches
 ═══════════════════════════════════════════════════ */
 const GLOBAL_HISTORY = {
-  'XAU/USD': { opens: null, highs: null, lows: null, closes: null, startTs: 0 },
-  'BTC/USD': { opens: null, highs: null, lows: null, closes: null, startTs: 0 }
+  'XAU/USD': { opens: null, highs: null, lows: null, closes: null, startTs: 0 }
 };
 
 // Universal Deterministic Price Calculation
@@ -1412,20 +1410,10 @@ export default function CandlestickChart({
         <>
           {/* ══ PRICE HEADER ══ */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 10px', background:'var(--bg-card)', borderBottom:'1px solid var(--border-color)', flexShrink:0, position:'relative' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer' }} onClick={() => setShowAssetMenu(!showAssetMenu)}>
-              <span style={{ fontWeight:'800', fontSize:'15px', color:'var(--text-bright)', fontFamily:'var(--font-display)' }}>{asset.symbol}</span>
-              <ChevronDown size={13} color="var(--text-muted)" style={{ transform: showAssetMenu ? 'rotate(180deg)' : 'none', transition: '0.2s' }}/>
+            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+              <span style={{ fontWeight:'800', fontSize:'16px', color:'var(--text-bright)', fontFamily:'var(--font-display)', letterSpacing: '0.5px' }}>{asset.symbol}</span>
+              <span style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>Gold</span>
             </div>
-            
-            {showAssetMenu && (
-              <div style={{ position:'absolute', top:'100%', left:'10px', background:'var(--bg-card)', border:'1px solid var(--border-color)', borderRadius:'6px', boxShadow:'0 4px 12px rgba(0,0,0,0.1)', zIndex:100, overflow:'hidden', minWidth:'120px' }}>
-                {ASSETS.map(a => (
-                  <div key={a.symbol} onClick={() => { setAsset(a); setShowAssetMenu(false); }} style={{ padding:'10px 14px', borderBottom:'1px solid var(--border-color)', fontSize:'13px', fontWeight:'700', color:asset.symbol===a.symbol?'var(--primary)':'var(--text-bright)', cursor:'pointer', background:asset.symbol===a.symbol?'rgba(255,255,255,0.05)':'transparent' }}>
-                    {a.symbol}
-                  </div>
-                ))}
-              </div>
-            )}
 
             <div style={{ display:'flex', gap:'15px', textAlign:'right' }}>
               <div>

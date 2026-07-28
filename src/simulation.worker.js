@@ -37,11 +37,10 @@ function getUniversalPrice(symbol, timestampMs = Date.now()) {
   return Number(price.toFixed(2));
 }
 
-// Initial Stock Configurations — Only 2 Pairs
+// Initial Stock Configurations — Only XAU/USD Gold
 const nowTsInit = Date.now();
 let stocks = [
   { symbol: 'XAU', name: 'Gold / USD', price: getUniversalPrice('XAU', nowTsInit), history: [], volatility: 0.0001, drift: 0 },
-  { symbol: 'BTC', name: 'Bitcoin / USD', price: getUniversalPrice('BTC', nowTsInit), history: [], volatility: 0.0003, drift: 0 },
 ];
 
 // Initialize histories deterministically

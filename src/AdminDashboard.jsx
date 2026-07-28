@@ -1475,10 +1475,6 @@ function ChartControlTab({ state, onChartControl }) {
               style={{ background: 'var(--bg-dark)' }}
             >
               <option value="XAU">Gold (XAU/USD)</option>
-              <option value="BTC">Bitcoin (BTC/USD)</option>
-              <option value="ETH">Ethereum (ETH/USD)</option>
-              <option value="AAPL">Apple (AAPL)</option>
-              <option value="TSLA">Tesla (TSLA)</option>
             </select>
           </div>
 
