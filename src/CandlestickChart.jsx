@@ -9,7 +9,7 @@ import { simWorker } from './App';
    CONSTANTS
 ═══════════════════════════════════════════════════ */
 const ASSETS = [
-  { symbol: 'XAU/USD', basePrice: 3325,    vol: 0.0006, digits: 2 }
+  { symbol: 'XAU/USD', basePrice: 69000,    vol: 0.0006, digits: 2 }
 ];
 
 // Timeframe seconds (how long each candle spans)
@@ -42,7 +42,7 @@ const GLOBAL_HISTORY = {
 // Guaranteed identical across all global clients and web workers for any specific timestamp
 function getUniversalPrice(symbol, timestampMs = Date.now()) {
   const isGold = symbol ? (symbol.startsWith('XAU') || symbol === 'XAU') : true;
-  const basePrice = isGold ? 3325.00 : 105200.00;
+  const basePrice = 69000.00;
   const scale = isGold ? 1.0 : 32.0;
   
   const t = timestampMs / 1000.0;
