@@ -1276,6 +1276,15 @@ onmessage = function(e) {
       break;
     }
 
+    case 'SYNC_DB_BALANCE': {
+      if (typeof payload.balance === 'number') {
+        userTrader.balance = payload.balance;
+        updateTradersNetWorth();
+        sendStateUpdate();
+      }
+      break;
+    }
+
     case 'LOGIN_USER': {
       userTrader = {
         id: payload.id,

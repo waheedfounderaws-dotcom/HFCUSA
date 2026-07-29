@@ -407,6 +407,14 @@ function App() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: realUserId, trade: payload.trade })
+        }).then(res => res.json()).then(data => {
+            if (data.success && typeof data.balance === 'number') {
+                simWorker.postMessage({ type: 'SYNC_DB_BALANCE', payload: { balance: data.balance } });
+                setSimState(prev => prev ? ({
+                    ...prev,
+                    userState: { ...(prev.userState || {}), balance: data.balance }
+                }) : prev);
+            }
         }).catch(err => console.error("Error saving trade:", err));
       } else if (type === 'DB_SAVE_DAILY_STATS') {
         const payload = e.data.payload;
@@ -462,7 +470,12 @@ function App() {
             const data = await res.json();
             
             if (data.success && typeof data.balance === 'number') {
-                // Save immediately to localStorage so initial browser render never lags
+                simWorker.postMessage({ type: 'SYNC_DB_BALANCE', payload: { balance: data.balance } });
+                setSimState(prev => prev ? ({
+                    ...prev,
+                    userState: { ...(prev.userState || {}), balance: data.balance }
+                }) : prev);
+
                 if (savedUser && savedUser.id) {
                     savedUser.balance = data.balance;
                     localStorage.setItem('aq_userData', JSON.stringify(savedUser));
