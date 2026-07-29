@@ -439,7 +439,7 @@ export default function CandlestickChart({
   ─────────────────────────────────────────── */
   useEffect(() => {
     const runUniversalTick = (customPrice = null, customTimestamp = null) => {
-      const timestamp = customTimestamp || Date.now();
+      const timestamp = customTimestamp || (Date.now() + (window.serverTimeOffset || 0));
       let tick = customPrice || getUniversalPrice(asset.symbol, timestamp);
 
       // Compute trade lock window status for the active timeframe
@@ -453,43 +453,6 @@ export default function CandlestickChart({
         setIsTradeLocked(lockedState);
       }
       setLockSecondsLeft(sRemaining);
-
-      // ── Dealing Desk House Advantage (Market Maker Technique) ──
-      // Jis taraf zada bet volume ho, wo side lose ho jayegi aur kam volume wali side win karegi
-      // Exclusively triggered during the final locked window!
-      const activeBets = activeBetsRef.current || [];
-      if (activeBets.length > 0) {
-        const currentBaseSymbol = asset.symbol.split('/')[0];
-        const relBets = activeBets.filter(b => {
-           if (!b.symbol || !b.symbol.startsWith(currentBaseSymbol)) return false;
-           const bTfs = b.tfs || 60;
-           const bEndTs = b.targetCloseTs ? b.targetCloseTs : (Math.floor(b.placedTs / (bTfs * 1000)) * (bTfs * 1000) + (bTfs * 1000));
-           const bLeft = Math.max(0, Math.floor((bEndTs - timestamp) / 1000));
-           const bThresh = bTfs >= 300 ? 60 : (bTfs <= 60 ? 15 : Math.min(60, Math.floor(bTfs / 4)));
-           return bLeft <= bThresh; // Decision is ONLY taken in the final locked time period!
-        });
-        if (relBets.length > 0) {
-          let totalRise = 0, totalFall = 0, minEntry = Infinity, maxEntry = -Infinity;
-          relBets.forEach(b => {
-            if (b.type === 'Rise' || b.type === 'BUY') totalRise += b.amount;
-            else if (b.type === 'Fall' || b.type === 'SELL') totalFall += b.amount;
-            if (b.entryPrice < minEntry) minEntry = b.entryPrice;
-            if (b.entryPrice > maxEntry) maxEntry = b.entryPrice;
-          });
-          const scale = currentBaseSymbol === 'XAU' ? 0.8 : (currentBaseSymbol === 'BTC' ? 2.5 : 0.8);
-          const timeOffset = Math.sin(timestamp / 350) * (0.05 * scale);
-          if (totalRise > totalFall && totalRise > 0) {
-            // Majority volume on Rise -> Force price smoothly below lowest entry (ALL Rise lose, ANY Fall win)
-            const targetDrop = minEntry - (0.25 * scale) + timeOffset;
-            if (tick >= targetDrop) tick = targetDrop;
-          } else if (totalFall > totalRise && totalFall > 0) {
-            // Majority volume on Fall -> Force price smoothly above highest entry (ALL Fall lose, ANY Rise win)
-            const targetRise = maxEntry + (0.25 * scale) + timeOffset;
-            if (tick <= targetRise) tick = targetRise;
-          }
-          tick = Number(tick.toFixed(asset.digits || 2));
-        }
-      }
 
       livePriceRef.current = tick;
 
