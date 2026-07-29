@@ -463,6 +463,10 @@ function App() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId })
+            }).then(r => r.json()).then(hb => {
+                if (hb && hb.serverTime) {
+                    window.serverTimeOffset = hb.serverTime - Date.now();
+                }
             }).catch(() => {});
 
             // INSTANT PRIORITY: Sync Database Balance FIRST before slow history tables!
@@ -470,6 +474,9 @@ function App() {
             const data = await res.json();
             
             if (data.success && typeof data.balance === 'number') {
+                if (data.serverTime) {
+                    window.serverTimeOffset = data.serverTime - Date.now();
+                }
                 simWorker.postMessage({ type: 'SYNC_DB_BALANCE', payload: { balance: data.balance } });
                 setSimState(prev => prev ? ({
                     ...prev,

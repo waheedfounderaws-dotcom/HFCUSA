@@ -223,7 +223,7 @@ app.get('/api/balance/:userId', async (req, res) => {
         const theme = user ? (user.theme || "light") : "light";
         const withdrawalAddress = user ? (user.withdrawalAddress || "") : "";
         const walletChangeAccess = user ? (user.walletChangeAccess || false) : false;
-        res.json({ success: true, balance, unclaimedRebate, claimedRebate, rebateRate, nickname, avatar, simSpeed, theme, withdrawalAddress, walletChangeAccess });
+        res.json({ success: true, balance, unclaimedRebate, claimedRebate, rebateRate, nickname, avatar, simSpeed, theme, withdrawalAddress, walletChangeAccess, serverTime: Date.now() });
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Database error" });
@@ -903,7 +903,7 @@ app.post('/api/user/heartbeat', async (req, res) => {
             { userId: userId.toString() },
             updateData
         );
-        res.json({ success: true });
+        res.json({ success: true, serverTime: Date.now() });
     } catch (err) {
         res.status(500).json({ success: false });
     }

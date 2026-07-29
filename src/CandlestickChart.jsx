@@ -244,7 +244,7 @@ const CandleTimer = ({ tfSeconds }) => {
   useEffect(() => {
     const durMs = tfSeconds * 1000;
     const updateTimer = () => {
-      const nowMs = Date.now();
+      const nowMs = Date.now() + (window.serverTimeOffset || 0);
       const nextCandleTime = Math.ceil(nowMs / durMs) * durMs;
       const msLeft = nextCandleTime - nowMs;
       const sLeft = Math.max(0, Math.floor(msLeft / 1000));
@@ -253,7 +253,7 @@ const CandleTimer = ({ tfSeconds }) => {
       setTimeLeft(`${mLeftStr}:${sLeftStr}`);
     };
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
+    const interval = setInterval(updateTimer, 500);
     return () => clearInterval(interval);
   }, [tfSeconds]);
 
@@ -266,7 +266,8 @@ const TradeIssueNumber = ({ tfSeconds }) => {
   useEffect(() => {
     const durMs = tfSeconds * 1000;
     const updateIssue = () => {
-      const issueNum = Math.floor(Date.now() / durMs);
+      const nowMs = Date.now() + (window.serverTimeOffset || 0);
+      const issueNum = Math.floor(nowMs / durMs);
       setIssue(issueNum.toString());
     };
     updateIssue();
