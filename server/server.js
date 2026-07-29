@@ -417,14 +417,42 @@ app.get('/api/trades/active/all', async (req, res) => {
     }
 });
 
+app.post('/api/user/deduct_balance', async (req, res) => {
+    try {
+        const { userId, amount } = req.body;
+        if (!userId || !amount || amount <= 0) return res.json({ success: false });
+
+        const updatedUser = await User.findOneAndUpdate(
+            { userId: userId.toString() },
+            { $inc: { balance: -Math.abs(Number(amount)) } },
+            { new: true }
+        );
+        res.json({ success: true, balance: updatedUser ? updatedUser.balance : 0 });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    }
+});
+
 app.post('/api/trades/close', async (req, res) => {
     try {
         const { userId, trade } = req.body;
         
-        // 1. Update user balance by PNL (Trade maker does NOT get rebate)
+        let balanceInc = trade.pnl || 0;
+        if (trade.reason === 'Candle Close' || trade.reason === 'Draw' || trade.type === 'Rise' || trade.type === 'Fall') {
+            if (trade.reason === 'Draw') {
+                balanceInc = trade.amount || 0;
+            } else if ((trade.pnl || 0) > 0) {
+                balanceInc = (trade.amount || 0) + (trade.pnl || 0);
+            } else {
+                balanceInc = 0;
+            }
+        }
+
+        // 1. Update user balance in DB
         const updatedUser = await User.findOneAndUpdate(
             { userId: userId.toString() },
-            { $inc: { balance: trade.pnl || 0 } },
+            { $inc: { balance: balanceInc } },
             { new: true, upsert: true }
         );
         

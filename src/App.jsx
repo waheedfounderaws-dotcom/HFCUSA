@@ -631,6 +631,26 @@ function App() {
       payload: payload
     });
     
+    let realUserId = "525810";
+    try {
+      const u = JSON.parse(localStorage.getItem('aq_userData') || '{}');
+      if (u && u.id && u.id.toString() !== 'admin') realUserId = u.id.toString();
+    } catch(e) {}
+
+    if (!payload.record && payload.profit < 0) {
+      // Deduct bet stake from MongoDB DB balance immediately
+      const stake = Math.abs(payload.profit);
+      fetch(`${API_BASE_URL}/api/user/deduct_balance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: realUserId, amount: stake })
+      }).then(res => res.json()).then(data => {
+        if (data.success && typeof data.balance === 'number') {
+          window._lastKnownBackendBalance = data.balance;
+        }
+      }).catch(() => {});
+    }
+
     // Show banner only if it's a settlement (record exists)
     if (payload.record) {
       if (payload.profit > 0) {
