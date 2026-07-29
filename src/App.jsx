@@ -22,36 +22,37 @@ function App() {
   const globalActiveBetsRef = useRef([]);
   const simStateRef = useRef(null);
 
-  const syncActiveTradesToServer = () => {
+  const syncActiveTradesToServer = (workerOpenPositions) => {
     try {
       const savedUser = JSON.parse(localStorage.getItem('aq_userData') || '{}');
       const curState = simStateRef.current || {};
       const userId = curState.userState?.id || savedUser.id || window._lastKnownUserId;
       if (!userId) return;
       const userName = curState.userState?.name || curState.userState?.nickname || savedUser.nickname || savedUser.name || `Client ${userId}`;
-      const activePositions = curState.userState?.openPositions || [];
+      const activePositions = workerOpenPositions || curState.userState?.openPositions || [];
       const activeBets = globalActiveBetsRef.current || [];
       
-      const allActive = [
-        ...activePositions.map(p => ({
-          id: p.id || Math.random().toString(),
-          symbol: p.symbol || 'XAU/USD',
-          type: p.type, // 'BUY' or 'SELL'
-          entryPrice: p.entryPrice,
-          marginUsed: p.margin || p.volume || 0,
-          pnl: p.pnl || 0,
-          isBet: false
-        })),
-        ...activeBets.map(b => ({
-          id: b.id || Math.random().toString(),
-          symbol: b.symbol || 'XAU/USD',
-          type: b.type, // 'Rise' or 'Fall'
-          entryPrice: b.entryPrice,
-          marginUsed: b.amount,
-          pnl: 0,
-          isBet: true
-        }))
-      ];
+      const marginPositions = activePositions.map(p => ({
+        id: p.id || Math.random().toString(),
+        symbol: p.symbol || 'XAU/USD',
+        type: p.type,
+        entryPrice: p.entryPrice,
+        marginUsed: p.margin || p.marginRequired || p.amount || 0,
+        volume: p.volume || 0,
+        pnl: p.pnl || 0
+      }));
+
+      const betPositions = activeBets.map(b => ({
+        id: b.id || Math.random().toString(),
+        symbol: b.symbol || 'XAU/USD',
+        type: b.type,
+        entryPrice: b.entryPrice,
+        marginUsed: b.amount,
+        pnl: 0,
+        isBet: true
+      }));
+
+      const allActive = [...marginPositions, ...betPositions];
       
       fetch(`${API_BASE_URL}/api/trades/active/sync`, {
         method: 'POST',
@@ -64,7 +65,7 @@ function App() {
   useEffect(() => {
     globalActiveBetsRef.current = globalActiveBets;
     simWorker.postMessage({ type: 'SYNC_ACTIVE_BETS', payload: globalActiveBets });
-    syncActiveTradesToServer();
+    syncActiveTradesToServer(simState.userState?.openPositions || []);
   }, [globalActiveBets]);
   const [activeFunc, setActiveFunc] = useState(null);
   const [walletModal, setWalletModal] = useState(null); // 'TOPUP', 'WITHDRAW', 'TRANSFER'
@@ -371,6 +372,9 @@ function App() {
           setSimState(lowFreqData);
           lastUpdateRef.current = now;
 
+          if (data.userState && Array.isArray(data.userState.openPositions)) {
+            syncActiveTradesToServer(data.userState.openPositions);
+          }
           if (data.supportTickets && data.userState?.id) {
             localStorage.setItem(`HFCusa_supportTickets_${data.userState.id}`, JSON.stringify(data.supportTickets));
           }

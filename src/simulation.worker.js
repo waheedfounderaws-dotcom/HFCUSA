@@ -600,8 +600,9 @@ function updateTradersNetWorth() {
              });
             if (trader.betRecords.length > 50) trader.betRecords.pop();
 
-            // Trigger notification
+            // Trigger notification & Save to DB
             if (userTrader && trader.id.toString() === userTrader.id.toString()) {
+               self.postMessage({ type: 'DB_SAVE_TRADE', payload: { trade: trader.betRecords[0] } });
                postMessage({ 
                  type: 'MARGIN_ALERT_EVENT', 
                  payload: { title: 'Position Closed', desc: `Trade ${pos.type} ${pos.symbol} closed at ${hitTP ? 'TP' : 'SL'}. PnL: $${pnl.toFixed(2)}` }
@@ -643,14 +644,18 @@ function updateTradersNetWorth() {
                 if (rebateHistory.length > 50) rebateHistory.pop();
             }
 
-            trader.betRecords.unshift({
+            const closedRecord = {
                ...pos,
                closePrice: currentPrice,
                closeTime: Date.now(),
                pnl: Number(pnl.toFixed(4)),
                rebate: rebate,
                reason: 'Liquidated'
-            });
+            };
+            trader.betRecords.unshift(closedRecord);
+            if (userTrader && trader.id.toString() === userTrader.id.toString()) {
+               self.postMessage({ type: 'DB_SAVE_TRADE', payload: { trade: closedRecord } });
+            }
          });
          
          if (trader.betRecords.length > 50) {
