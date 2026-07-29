@@ -320,33 +320,29 @@ function App() {
               const shouldClose = bet.targetCloseTs ? (data.timestamp >= bet.targetCloseTs) : (bkTs > bet.placedTs);
               
               if (shouldClose) {
-                  const matchSymbol = bet.symbol.split('/')[0];
-                  const stock = data.stocks.find(s => s.symbol === matchSymbol);
-                  if (stock) {
-                      const closePrice = stock.price;
-                      const draw = closePrice === bet.entryPrice;
-                      const won = (bet.type === 'Rise' && closePrice > bet.entryPrice) || 
-                                  (bet.type === 'Fall' && closePrice < bet.entryPrice);
-                      const brokerageFee = won ? (bet.amount * 0.05) : 0;
-                      const rebate = won ? (bet.amount * 0.01) : 0;
-                      const profit = won ? (bet.amount * 2) - brokerageFee : (draw ? bet.amount : 0);
-                      
-                      handleBetSettle({
-                         profit,
-                         record: {
-                             ...bet,
-                             closePrice,
-                             closeTime: Date.now(),
-                             pnl: won ? (bet.amount - brokerageFee) : (draw ? 0 : -bet.amount),
-                             rebate,
-                             spreadCost: brokerageFee,
-                             reason: draw ? 'Draw' : 'Candle Close'
-                         }
-                      });
-                      changed = true;
-                  } else {
-                      remainingBets.push(bet);
-                  }
+                  const matchSymbol = (bet.symbol || 'XAU').split('/')[0];
+                  const stock = data.stocks ? data.stocks.find(s => s.symbol === matchSymbol) : null;
+                  const closePrice = stock ? stock.price : (bet.entryPrice || 0);
+                  const draw = closePrice === bet.entryPrice;
+                  const won = (bet.type === 'Rise' && closePrice > bet.entryPrice) || 
+                              (bet.type === 'Fall' && closePrice < bet.entryPrice);
+                  const brokerageFee = won ? (bet.amount * 0.05) : 0;
+                  const rebate = won ? (bet.amount * 0.01) : 0;
+                  const profit = won ? (bet.amount * 2) - brokerageFee : (draw ? bet.amount : 0);
+                  
+                  handleBetSettle({
+                     profit,
+                     record: {
+                         ...bet,
+                         closePrice,
+                         closeTime: Date.now(),
+                         pnl: won ? (bet.amount - brokerageFee) : (draw ? 0 : -bet.amount),
+                         rebate,
+                         spreadCost: brokerageFee,
+                         reason: draw ? 'Draw' : 'Candle Close'
+                     }
+                  });
+                  changed = true;
               } else {
                   remainingBets.push(bet);
               }
