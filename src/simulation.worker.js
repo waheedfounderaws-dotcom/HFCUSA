@@ -4,9 +4,13 @@
 // Universal Deterministic Price Calculation
 // Guaranteed identical across all global clients and web workers for any specific timestamp
 function getUniversalPrice(symbol, timestampMs = Date.now()) {
-  const isGold = symbol ? (symbol.startsWith('XAU') || symbol === 'XAU') : true;
-  const basePrice = 69000.00;
-  const scale = isGold ? 1.0 : 32.0;
+  const sym = symbol ? symbol.split('/')[0] : 'XAU';
+  const isGold = sym === 'XAU';
+  const isBTC  = sym === 'BTC';
+  const isETH  = sym === 'ETH';
+  
+  const basePrice = isBTC ? 68950.00 : (isETH ? 3450.00 : (isGold ? 2650.00 : 1.0850));
+  const scale = isBTC ? 2.5 : (isETH ? 0.8 : (isGold ? 0.8 : 0.0003));
   
   const t = timestampMs / 1000.0;
   
@@ -30,11 +34,11 @@ function getUniversalPrice(symbol, timestampMs = Date.now()) {
   // 5. Live Tick Jitters (Seconds-level micro ticks)
   const secW   = Math.sin(t / 28.0 * 2 * Math.PI) * (0.22 * scale);
   const tickSlot = Math.floor(t * 1.5);
-  const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : 313.313)) * 43758.5453;
+  const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : (isBTC ? 313.313 : 521.121))) * 43758.5453;
   const tickNoise = (seedNoise - Math.floor(seedNoise) - 0.5) * (0.18 * scale);
   
   const price = basePrice + macro1 + macro2 + daily + h4 + h1 + m30 + m15 + m5 + m1 + secW + tickNoise;
-  return Number(price.toFixed(2));
+  return Number(price.toFixed(isGold ? 2 : (isBTC ? 2 : (isETH ? 2 : 4))));
 }
 
 // Initial Stock Configurations

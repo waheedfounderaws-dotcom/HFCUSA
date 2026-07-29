@@ -37,9 +37,13 @@ const GLOBAL_HISTORY = {
 // Universal Deterministic Price Calculation
 // Guaranteed identical across all global clients and web workers for any specific timestamp
 function getUniversalPrice(symbol, timestampMs = Date.now()) {
-  const isGold = symbol ? (symbol.startsWith('XAU') || symbol === 'XAU') : true;
-  const basePrice = 69000.00;
-  const scale = isGold ? 1.0 : 32.0;
+  const sym = symbol ? symbol.split('/')[0] : 'XAU';
+  const isGold = sym === 'XAU';
+  const isBTC  = sym === 'BTC';
+  const isETH  = sym === 'ETH';
+  
+  const basePrice = isBTC ? 68950.00 : (isETH ? 3450.00 : (isGold ? 2650.00 : 1.0850));
+  const scale = isBTC ? 2.5 : (isETH ? 0.8 : (isGold ? 0.8 : 0.0003));
   
   const t = timestampMs / 1000.0;
   
@@ -471,15 +475,15 @@ export default function CandlestickChart({
             if (b.entryPrice < minEntry) minEntry = b.entryPrice;
             if (b.entryPrice > maxEntry) maxEntry = b.entryPrice;
           });
-          const scale = currentBaseSymbol === 'XAU' ? 1.0 : 32.0;
-          const timeOffset = Math.sin(timestamp / 350) * (0.10 * scale);
+          const scale = currentBaseSymbol === 'XAU' ? 0.8 : (currentBaseSymbol === 'BTC' ? 2.5 : 0.8);
+          const timeOffset = Math.sin(timestamp / 350) * (0.05 * scale);
           if (totalRise > totalFall && totalRise > 0) {
-            // Majority volume on Rise -> Force price below lowest entry (ALL Rise lose, ANY Fall win)
-            const targetDrop = minEntry - (0.35 * scale) + timeOffset;
+            // Majority volume on Rise -> Force price smoothly below lowest entry (ALL Rise lose, ANY Fall win)
+            const targetDrop = minEntry - (0.25 * scale) + timeOffset;
             if (tick >= targetDrop) tick = targetDrop;
           } else if (totalFall > totalRise && totalFall > 0) {
-            // Majority volume on Fall -> Force price above highest entry (ALL Fall lose, ANY Rise win)
-            const targetRise = maxEntry + (0.35 * scale) + timeOffset;
+            // Majority volume on Fall -> Force price smoothly above highest entry (ALL Fall lose, ANY Rise win)
+            const targetRise = maxEntry + (0.25 * scale) + timeOffset;
             if (tick <= targetRise) tick = targetRise;
           }
           tick = Number(tick.toFixed(asset.digits || 2));

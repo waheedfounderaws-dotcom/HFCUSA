@@ -298,16 +298,16 @@ function App() {
               if (hasExpiring) {
                  const stock = data.stocks.find(s => s.symbol === sym);
                  if (stock) {
-                    const scale = sym === 'XAU' ? 1.0 : 32.0;
+                    const scale = sym === 'XAU' ? 0.8 : (sym === 'BTC' ? 2.5 : 0.8);
                     if (totalRise > totalFall && totalRise > 0) {
                        // Majority volume on Rise -> closePrice strictly BELOW lowest entry (Rise loses, Fall wins)
                        if (stock.price >= minEntry) {
-                          stock.price = Number((minEntry - (0.25 * scale)).toFixed(2));
+                          stock.price = Number((minEntry - (0.15 * scale)).toFixed(2));
                        }
                     } else if (totalFall > totalRise && totalFall > 0) {
                        // Majority volume on Fall -> closePrice strictly ABOVE highest entry (Fall loses, Rise wins)
                        if (stock.price <= maxEntry) {
-                          stock.price = Number((maxEntry + (0.25 * scale)).toFixed(2));
+                          stock.price = Number((maxEntry + (0.15 * scale)).toFixed(2));
                        }
                     }
                  }
