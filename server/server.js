@@ -54,6 +54,76 @@ app.use((req, res, next) => {
     next();
 });
 
+// Universal Centralized Master Price Generator Engine
+function getUniversalPrice(symbol, timestampMs = Date.now()) {
+  const sym = symbol ? symbol.split('/')[0] : 'XAU';
+  const isGold = sym === 'XAU';
+  const isBTC  = sym === 'BTC';
+  const isETH  = sym === 'ETH';
+  
+  const basePrice = isBTC ? 68950.00 : (isETH ? 3450.00 : (isGold ? 2650.00 : 1.0850));
+  const scale = isBTC ? 2.5 : (isETH ? 0.8 : (isGold ? 0.8 : 0.0003));
+  
+  const t = timestampMs / 1000.0;
+  
+  const macro1 = Math.sin(t / (11.5 * 86400) * 2 * Math.PI) * (45.0 * scale);
+  const macro2 = Math.sin(t / (4.2 * 86400) * 2 * Math.PI + 1.8) * (28.0 * scale);
+  const daily  = Math.cos(t / (1.3 * 86400) * 2 * Math.PI + 4.2) * (18.0 * scale);
+  const h4     = Math.sin(t / (6.8 * 3600) * 2 * Math.PI + 0.9) * (12.0 * scale);
+  const h1     = Math.cos(t / (2.4 * 3600) * 2 * Math.PI + 2.5) * (7.5 * scale);
+  const m30    = Math.sin(t / (52.0 * 60) * 2 * Math.PI + 5.1) * (4.2 * scale);
+  const m15    = Math.cos(t / (19.0 * 60) * 2 * Math.PI + 3.7) * (2.4 * scale);
+  const m5     = Math.sin(t / (7.2 * 60) * 2 * Math.PI + 1.2) * (1.3 * scale);
+  const m1     = Math.cos(t / (2.8 * 60) * 2 * Math.PI + 0.4) * (0.65 * scale);
+  const secW   = Math.sin(t / 28.0 * 2 * Math.PI) * (0.22 * scale);
+  const tickSlot = Math.floor(t * 1.5);
+  const seedNoise = Math.sin(tickSlot * (isGold ? 171.171 : (isBTC ? 313.313 : 521.121))) * 43758.5453;
+  const tickNoise = (seedNoise - Math.floor(seedNoise) - 0.5) * (0.18 * scale);
+  
+  const price = basePrice + macro1 + macro2 + daily + h4 + h1 + m30 + m15 + m5 + m1 + secW + tickNoise;
+  return Number(price.toFixed(isGold ? 2 : (isBTC ? 2 : (isETH ? 2 : 4))));
+}
+
+app.get('/api/market/ticks', (req, res) => {
+    const now = Date.now();
+    const stocks = [
+        { symbol: 'XAU', name: 'Gold / USD', price: getUniversalPrice('XAU', now) },
+        { symbol: 'BTC', name: 'Bitcoin / USD', price: getUniversalPrice('BTC', now) },
+        { symbol: 'ETH', name: 'Ethereum / USD', price: getUniversalPrice('ETH', now) },
+        { symbol: 'EUR', name: 'EUR / USD', price: getUniversalPrice('EUR', now) },
+        { symbol: 'GBP', name: 'GBP / USD', price: getUniversalPrice('GBP', now) }
+    ];
+    res.json({
+        success: true,
+        timestamp: now,
+        serverTime: now,
+        stocks
+    });
+});
+
+app.get('/api/market/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const sendTick = () => {
+        const now = Date.now();
+        const stocks = [
+            { symbol: 'XAU', name: 'Gold / USD', price: getUniversalPrice('XAU', now) },
+            { symbol: 'BTC', name: 'Bitcoin / USD', price: getUniversalPrice('BTC', now) },
+            { symbol: 'ETH', name: 'Ethereum / USD', price: getUniversalPrice('ETH', now) },
+            { symbol: 'EUR', name: 'EUR / USD', price: getUniversalPrice('EUR', now) },
+            { symbol: 'GBP', name: 'GBP / USD', price: getUniversalPrice('GBP', now) }
+        ];
+        res.write(`data: ${JSON.stringify({ timestamp: now, serverTime: now, stocks })}\n\n`);
+    };
+
+    sendTick();
+    const timer = setInterval(sendTick, 400);
+    req.on('close', () => clearInterval(timer));
+});
+
 // Routes
 app.post('/api/cryptomus/deposit', createDepositInvoice);
 app.post('/api/cryptomus/webhook', handleCryptomusWebhook);

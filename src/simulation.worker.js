@@ -1289,6 +1289,21 @@ onmessage = function(e) {
       break;
     }
 
+    case 'SERVER_MARKET_TICK': {
+      if (payload && Array.isArray(payload.stocks)) {
+        payload.stocks.forEach(serverStock => {
+          const localStock = stocks.find(s => s.symbol === serverStock.symbol);
+          if (localStock) {
+            localStock.price = serverStock.price;
+            localStock.history.push(serverStock.price);
+            if (localStock.history.length > 60) localStock.history.shift();
+          }
+        });
+        sendStateUpdate();
+      }
+      break;
+    }
+
     case 'LOGIN_USER': {
       userTrader = {
         id: payload.id,

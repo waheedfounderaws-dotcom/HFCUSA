@@ -452,6 +452,33 @@ function App() {
     // Request initial data sync
     simWorker.postMessage({ type: 'REQUEST_REFRESH' });
 
+    // Connect to Centralized Server Market Stream
+    try {
+      const es = new EventSource(`${API_BASE_URL}/api/market/stream`);
+      es.onmessage = (e) => {
+        try {
+          const serverData = JSON.parse(e.data);
+          if (serverData && serverData.stocks) {
+            if (serverData.serverTime) {
+              window.serverTimeOffset = serverData.serverTime - Date.now();
+            }
+            simWorker.postMessage({ type: 'SERVER_MARKET_TICK', payload: serverData });
+          }
+        } catch(err) {}
+      };
+      es.onerror = () => {
+        // Fallback polling if EventSource drops
+        fetch(`${API_BASE_URL}/api/market/ticks`)
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.stocks) {
+              if (data.serverTime) window.serverTimeOffset = data.serverTime - Date.now();
+              simWorker.postMessage({ type: 'SERVER_MARKET_TICK', payload: data });
+            }
+          }).catch(() => {});
+      };
+    } catch(err) {}
+
     const syncBackend = async () => {
         try {
             // Always read the latest user ID from localStorage to avoid React stale closures
